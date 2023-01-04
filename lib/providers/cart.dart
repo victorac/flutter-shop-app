@@ -23,8 +23,20 @@ class Cart with ChangeNotifier {
     return {..._items};
   }
 
+  int get productCount {
+    return items.values.length;
+  }
+
   int get itemCount {
     return items.values.fold(0, (value, element) => value + element.quantity);
+  }
+
+  double get total {
+    return items.values.fold(
+      0,
+      (previousValue, element) =>
+          previousValue + element.quantity * element.price,
+    );
   }
 
   void addItem(String productId, String title, double price) {
