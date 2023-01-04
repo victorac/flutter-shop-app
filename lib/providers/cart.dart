@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CartItem with ChangeNotifier {
+class CartItem {
   final String id;
   final String productId;
   final String title;
@@ -63,6 +63,11 @@ class Cart with ChangeNotifier {
         ),
       );
     }
+    notifyListeners();
+  }
+
+  void removeItem(String id) {
+    _items.removeWhere((key, value) => key == id);
     notifyListeners();
   }
 }
