@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/products.dart';
-import '../models/product.dart';
+import '../providers/product.dart';
 import './product_item.dart';
 
 class ProductsGrid extends StatelessWidget {
@@ -22,10 +22,9 @@ class ProductsGrid extends StatelessWidget {
         mainAxisSpacing: 10,
       ),
       itemBuilder: (context, index) {
-        return ProductItem(
-          id: loadedProducts[index].id,
-          title: loadedProducts[index].title,
-          imageUrl: loadedProducts[index].imageUrl,
+        return ChangeNotifierProvider.value(
+          value: loadedProducts[index],
+          child: const ProductItem(),
         );
       },
     );
