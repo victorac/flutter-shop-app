@@ -5,6 +5,7 @@ import '../screens/cart_screen.dart';
 import '../providers/cart.dart';
 import '../widgets/badge.dart';
 import '../widgets/products_grid.dart';
+import '../widgets/app_drawer.dart';
 
 class ProductOverviewScreen extends StatefulWidget {
   const ProductOverviewScreen({super.key});
@@ -64,6 +65,7 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
       body: ProductsGrid(
         filterFavorites: _filterFavorites,
       ),
+      drawer: const AppDrawer(),
     );
   }
 }
