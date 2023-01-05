@@ -41,9 +41,29 @@ class CartItemCard extends StatelessWidget {
       ),
       direction: DismissDirection.endToStart,
       onDismissed: (direction) {
-        print(productId);
         removeItem(productId);
       },
+      confirmDismiss: (direction) => showDialog(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('Are you sure?'),
+              content:
+                  const Text('Do you want to remove this item from the cart?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: TextButton.styleFrom(
+                      backgroundColor: Theme.of(context).errorColor),
+                  child: const Text('Delete'),
+                ),
+              ],
+            );
+          }),
       child: Card(
         margin: const EdgeInsets.symmetric(
           horizontal: 15,
