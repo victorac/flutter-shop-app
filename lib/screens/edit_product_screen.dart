@@ -67,22 +67,55 @@ class _EditProductScreenState extends State<EditProductScreen> {
       appBar: AppBar(
         title: const Text('Edit product'),
       ),
-      body: Column(
-        children: [
-          if (!_editImage)
-            Card(
-              child: Container(
-                margin: const EdgeInsets.all(10),
-                width: double.infinity,
-                height: 150,
-                child: Image.network(
-                  _imageController.text,
-                  fit: BoxFit.contain,
-                ),
-              ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            ProductImageFromController(imageController: _imageController),
+            CustomTextEditor(
+                controller: _imageController, hintText: "image URL"),
+            CustomTextEditor(controller: _idController, hintText: "ID"),
+            CustomTextEditor(controller: _titleController, hintText: "name"),
+            CustomTextEditor(
+                controller: _descController, hintText: "description"),
+            CustomTextEditor(
+              controller: _priceController,
+              hintText: "price",
+              isDigit: true,
             ),
-          CustomTextEditor(controller: _imageController, hintText: "image URL"),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProductImageFromController extends StatelessWidget {
+  const ProductImageFromController({
+    Key? key,
+    required TextEditingController imageController,
+  })  : _imageController = imageController,
+        super(key: key);
+
+  final TextEditingController _imageController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Container(
+        margin: const EdgeInsets.all(10),
+        width: double.infinity,
+        height: 150,
+        child: Image.network(
+          _imageController.text,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.error),
+              Text('Image not found!'),
+            ],
+          ),
+        ),
       ),
     );
   }
