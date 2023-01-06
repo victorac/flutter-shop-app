@@ -58,6 +58,14 @@ class Products with ChangeNotifier {
     );
   }
 
+  Product? tryItem(String id) {
+    try {
+      return _items.firstWhere((element) => element.id == id);
+    } on StateError {
+      return null;
+    }
+  }
+
   void updateItem(String id, String title, String description, double price,
       String imageUrl) {
     _items.removeWhere((element) => element.id == id);
