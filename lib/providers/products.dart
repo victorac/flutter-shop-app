@@ -46,6 +46,45 @@ class Products with ChangeNotifier {
   }
 
   Product item(String id) {
-    return _items.firstWhere((element) => element.id == id);
+    return _items.firstWhere(
+      (element) => element.id == id,
+      orElse: () => Product(
+        id: '',
+        title: '',
+        description: '',
+        price: 0,
+        imageUrl: '',
+      ),
+    );
+  }
+
+  void updateItem(String id, String title, String description, double price,
+      String imageUrl) {
+    _items.removeWhere((element) => element.id == id);
+    _items.add(Product(
+      id: id,
+      title: title,
+      description: description,
+      price: price,
+      imageUrl: imageUrl,
+    ));
+    notifyListeners();
+  }
+
+  void addItem(String id, String title, String description, double price,
+      String imageUrl) {
+    _items.add(Product(
+      id: id,
+      title: title,
+      description: description,
+      price: price,
+      imageUrl: imageUrl,
+    ));
+    notifyListeners();
+  }
+
+  void removeItem(String id) {
+    _items.removeWhere((element) => element.id == id);
+    notifyListeners();
   }
 }

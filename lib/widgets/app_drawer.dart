@@ -28,8 +28,7 @@ class AppDrawer extends StatelessWidget {
           title: const Text('Shop'),
         ),
         ListTile(
-          onTap: () =>
-              Navigator.of(context).pushReplacementNamed(CartScreen.routeName),
+          onTap: () => Navigator.of(context).pushNamed(CartScreen.routeName),
           leading: const Icon(Icons.shopping_cart),
           title: const Text('Cart'),
         ),

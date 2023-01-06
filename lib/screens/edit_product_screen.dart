@@ -1,22 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:shop_app/widgets/custom_text_input.dart';
+import 'package:provider/provider.dart';
+
+import '../widgets/custom_text_input.dart';
+import '../providers/products.dart';
 
 class EditProductScreen extends StatefulWidget {
   static const String routeName = '/edit-product';
-  const EditProductScreen({
-    super.key,
-    this.id = '',
-    this.title = '',
-    this.description = '',
-    this.price = 0,
-    this.imageUrl = '',
-  });
-
-  final String id;
-  final String title;
-  final String description;
-  final double price;
-  final String imageUrl;
+  const EditProductScreen({super.key});
 
   @override
   State<EditProductScreen> createState() => _EditProductScreenState();
@@ -24,31 +14,19 @@ class EditProductScreen extends StatefulWidget {
 
 class _EditProductScreenState extends State<EditProductScreen> {
   late TextEditingController _idController;
-  bool _editId = false;
   late TextEditingController _titleController;
-  bool _editTitle = false;
   late TextEditingController _descController;
-  bool _editDesc = false;
   late TextEditingController _priceController;
-  bool _editPrice = false;
   late TextEditingController _imageController;
-  bool _editImage = false;
-  late String _previousImage;
 
   @override
   void initState() {
     super.initState();
     _idController = TextEditingController();
-    _idController.text = widget.id;
     _titleController = TextEditingController();
-    _titleController.text = widget.title;
     _descController = TextEditingController();
-    _descController.text = widget.title;
     _priceController = TextEditingController();
-    _priceController.text = widget.price.toString();
     _imageController = TextEditingController();
-    _imageController.text = widget.imageUrl;
-    _previousImage = widget.imageUrl;
   }
 
   @override
@@ -63,16 +41,44 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final String productId =
+        ModalRoute.of(context)!.settings.arguments as String;
+    final products = Provider.of<Products>(context, listen: false);
+    final product = products.item(productId);
+
+    _idController.text = product.id;
+    _titleController.text = product.title;
+    _descController.text = product.description;
+    _priceController.text = product.price.toString();
+    _imageController.text = product.imageUrl;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit product'),
+        actions: [
+          IconButton(
+              onPressed: () {
+                products.updateItem(
+                  _idController.text,
+                  _titleController.text,
+                  _descController.text,
+                  double.parse(_priceController.text),
+                  _imageController.text,
+                );
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.save))
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            ProductImageFromController(imageController: _imageController),
             CustomTextEditor(
-                controller: _imageController, hintText: "image URL"),
+              controller: _imageController,
+              hintText: "image URL",
+              imageUrl: _imageController.text,
+              displayImage: true,
+            ),
             CustomTextEditor(controller: _idController, hintText: "ID"),
             CustomTextEditor(controller: _titleController, hintText: "name"),
             CustomTextEditor(
@@ -83,38 +89,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
               isDigit: true,
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class ProductImageFromController extends StatelessWidget {
-  const ProductImageFromController({
-    Key? key,
-    required TextEditingController imageController,
-  })  : _imageController = imageController,
-        super(key: key);
-
-  final TextEditingController _imageController;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Container(
-        margin: const EdgeInsets.all(10),
-        width: double.infinity,
-        height: 150,
-        child: Image.network(
-          _imageController.text,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.error),
-              Text('Image not found!'),
-            ],
-          ),
         ),
       ),
     );
