@@ -2,21 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/products.dart';
-import '../providers/product.dart';
 
 class MutableProduct {
   String id;
   String title;
   String description;
   String imageUrl;
-  double price;
+  String price;
+  bool isFavorite;
 
   MutableProduct({
     this.id = '',
     this.title = '',
     this.description = '',
     this.imageUrl = '',
-    this.price = 0,
+    this.price = '',
+    this.isFavorite = false,
   });
 }
 
@@ -34,6 +35,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late GlobalKey<FormState> _formKey;
   late MutableProduct _product;
   late Function _updateItem;
+  final urlRegex = RegExp(
+      r"(https?|ftp)://([-A-Z0-9.]+)(/[-A-Z0-9+&@#/%=~_|!:,.;]*)?(\?[A-Z0-9+&@#/%=~_|!:,.;]*)?",
+      caseSensitive: false);
+  bool _isInit = true;
 
   @override
   void initState() {
@@ -46,23 +51,27 @@ class _EditProductScreenState extends State<EditProductScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final products = Provider.of<Products>(context, listen: false);
-    final productId = ModalRoute.of(context)!.settings.arguments as String;
-    final productRef = products.tryItem(productId);
-    _updateItem = products.updateItem;
-    if (productRef == null) {
-      _product = MutableProduct(id: DateTime.now().toString());
-    } else {
-      _product = MutableProduct(
-        id: productRef.id,
-        title: productRef.title,
-        price: productRef.price,
-        description: productRef.description,
-        imageUrl: productRef.imageUrl,
-      );
+    if (_isInit) {
+      final products = Provider.of<Products>(context, listen: false);
+      final productId = ModalRoute.of(context)!.settings.arguments;
+      if (productId == null) {
+        _product = MutableProduct(id: DateTime.now().toString());
+      } else {
+        final productRef = products.item(productId as String);
+        _product = MutableProduct(
+          id: productRef.id,
+          title: productRef.title,
+          price: productRef.price.toStringAsFixed(2),
+          description: productRef.description,
+          imageUrl: productRef.imageUrl,
+          isFavorite: productRef.isFavorite,
+        );
+      }
+      _updateItem = products.updateItem;
+      _imageSrc = _product.imageUrl;
+      _imgController.text = _product.imageUrl;
+      _isInit = false;
     }
-    _imageSrc = _product.imageUrl;
-    _imgController.text = _product.imageUrl;
   }
 
   @override
@@ -72,7 +81,19 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   void _updateProduct() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     _formKey.currentState!.save();
+    _updateItem(
+      _product.id,
+      _product.title,
+      _product.description,
+      double.parse(_product.price),
+      _product.imageUrl,
+      _product.isFavorite,
+    );
+    Navigator.of(context).pop();
   }
 
   @override
@@ -84,14 +105,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
           IconButton(
             onPressed: () {
               _updateProduct();
-              _updateItem(
-                _product.id,
-                _product.title,
-                _product.description,
-                _product.price,
-                _product.imageUrl,
-              );
-              Navigator.of(context).pop();
             },
             icon: const Icon(
               Icons.save,
@@ -113,15 +126,25 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   onSaved: (newValue) {
                     _product.title = newValue as String;
                   },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please provide a title';
+                    }
+                  },
                 ),
                 TextFormField(
-                  initialValue: _product.price.toString(),
-                  decoration: const InputDecoration(labelText: 'Price'),
-                  textInputAction: TextInputAction.next,
-                  keyboardType: TextInputType.number,
-                  onSaved: (newValue) =>
-                      _product.price = double.parse(newValue as String),
-                ),
+                    initialValue: _product.price.toString(),
+                    decoration: const InputDecoration(labelText: 'Price'),
+                    textInputAction: TextInputAction.next,
+                    keyboardType: TextInputType.number,
+                    onSaved: (newValue) => _product.price = newValue as String,
+                    validator: (value) {
+                      try {
+                        double.parse(value as String);
+                      } on FormatException {
+                        return 'Please provide a valid number';
+                      }
+                    }),
                 TextFormField(
                   initialValue: _product.description,
                   decoration: const InputDecoration(labelText: 'Description'),
@@ -130,6 +153,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   textInputAction: TextInputAction.newline,
                   onSaved: (newValue) =>
                       _product.description = newValue as String,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Please provide a description'
+                      : null,
                 ),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -164,6 +190,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                 const InputDecoration(labelText: 'Image URL'),
                             keyboardType: TextInputType.url,
                             textInputAction: TextInputAction.done,
+                            validator: (value) {
+                              return urlRegex.hasMatch(value as String)
+                                  ? null
+                                  : 'Plase input a valid URL';
+                            },
                             onFieldSubmitted: (value) => setState(() {
                                   _imageSrc = value;
                                 }),

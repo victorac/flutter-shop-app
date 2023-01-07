@@ -67,15 +67,21 @@ class Products with ChangeNotifier {
   }
 
   void updateItem(String id, String title, String description, double price,
-      String imageUrl) {
-    _items.removeWhere((element) => element.id == id);
-    _items.add(Product(
+      String imageUrl, bool isFavorite) {
+    final itemIndex = _items.indexWhere((element) => element.id == id);
+    final newProduct = Product(
       id: id,
       title: title,
       description: description,
       price: price,
       imageUrl: imageUrl,
-    ));
+      isFavorite: isFavorite,
+    );
+    if (itemIndex >= 0) {
+      _items[itemIndex] = newProduct;
+    } else {
+      _items.add(newProduct);
+    }
     notifyListeners();
   }
 
