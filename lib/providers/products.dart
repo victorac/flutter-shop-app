@@ -1,4 +1,9 @@
+import 'dart:convert' as convert;
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import './product.dart';
 
 class Products with ChangeNotifier {
@@ -85,16 +90,42 @@ class Products with ChangeNotifier {
     notifyListeners();
   }
 
-  void addItem(String id, String title, String description, double price,
-      String imageUrl) {
-    _items.add(Product(
-      id: id,
-      title: title,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-    ));
-    notifyListeners();
+  Future<void> addItem({
+    required String title,
+    required String description,
+    required double price,
+    required String imageUrl,
+  }) async {
+    final url = Uri.https(
+      dotenv.env['DATABASE_AUTHORITY'] as String,
+      dotenv.env['DATABASE_PRODUCT_PATH'] as String,
+    );
+    try {
+      final response = await http.post(
+        url,
+        body: convert.jsonEncode(
+          {
+            'title': title,
+            'description': description,
+            'price': price,
+            'imageUrl': imageUrl,
+            'isFavorite': false
+          },
+        ),
+      );
+      final String generatedId = convert.jsonDecode(response.body)['name'];
+      _items.add(Product(
+        id: generatedId,
+        title: title,
+        description: description,
+        price: price,
+        imageUrl: imageUrl,
+      ));
+      notifyListeners();
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   void removeItem(String id) {

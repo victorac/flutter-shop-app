@@ -35,6 +35,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late GlobalKey<FormState> _formKey;
   late MutableProduct _product;
   late Function _updateItem;
+  late Function _addItem;
   final urlRegex = RegExp(
       r"(https?|ftp)://([-A-Z0-9.]+)(/[-A-Z0-9+&@#/%=~_|!:,.;]*)?(\?[A-Z0-9+&@#/%=~_|!:,.;]*)?",
       caseSensitive: false);
@@ -55,7 +56,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       final products = Provider.of<Products>(context, listen: false);
       final productId = ModalRoute.of(context)!.settings.arguments;
       if (productId == null) {
-        _product = MutableProduct(id: DateTime.now().toString());
+        _product = MutableProduct();
       } else {
         final productRef = products.item(productId as String);
         _product = MutableProduct(
@@ -68,6 +69,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         );
       }
       _updateItem = products.updateItem;
+      _addItem = products.addItem;
       _imageSrc = _product.imageUrl;
       _imgController.text = _product.imageUrl;
       _isInit = false;
@@ -80,20 +82,51 @@ class _EditProductScreenState extends State<EditProductScreen> {
     super.dispose();
   }
 
-  void _updateProduct() {
+  void _updateProduct() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     _formKey.currentState!.save();
-    _updateItem(
-      _product.id,
-      _product.title,
-      _product.description,
-      double.parse(_product.price),
-      _product.imageUrl,
-      _product.isFavorite,
-    );
-    Navigator.of(context).pop();
+    print('id: ${_product.id}');
+    if (_product.id.isEmpty) {
+      print('new product');
+      // new product
+      try {
+        await _addItem(
+          title: _product.title,
+          description: _product.description,
+          price: double.parse(_product.price),
+          imageUrl: _product.imageUrl,
+        );
+      } catch (error) {
+        print(error);
+        showDialog(
+          context: context,
+          builder: ((ctx) => AlertDialog(
+                title: const Text('Error'),
+                content:
+                    const Text('There was an error while adding the product'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('OK'),
+                  )
+                ],
+              )),
+        );
+      } finally {
+        Navigator.of(context).pop();
+      }
+    } else {
+      _updateItem(
+        _product.id,
+        _product.title,
+        _product.description,
+        double.parse(_product.price),
+        _product.imageUrl,
+        _product.isFavorite,
+      );
+    }
   }
 
   @override
