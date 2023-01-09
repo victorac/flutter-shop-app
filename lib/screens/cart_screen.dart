@@ -13,6 +13,8 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cart = Provider.of<Cart>(context);
     final List<CartItem> cartItems = cart.items.values.toList();
+    final isCartEmpty = cart.itemCount == 0;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Cart'),
@@ -44,11 +46,26 @@ class CartScreen extends StatelessWidget {
                     backgroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   TextButton(
-                    onPressed: () {
-                      Provider.of<Orders>(context, listen: false)
-                          .addOrder(cart);
-                      cart.clear();
-                    },
+                    onPressed: isCartEmpty
+                        ? null
+                        : () async {
+                            try {
+                              await Provider.of<Orders>(context, listen: false)
+                                  .addOrder(cart);
+                              cart.clear();
+                            } catch (error) {
+                              print(error);
+                              scaffoldMessenger.clearSnackBars();
+                              scaffoldMessenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Error while making the order!',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
                     child: const Text('Order!'),
                   )
                 ],
