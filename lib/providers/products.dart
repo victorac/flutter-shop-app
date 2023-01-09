@@ -76,7 +76,7 @@ class Products with ChangeNotifier {
       double price, String imageUrl, bool isFavorite) async {
     final url = Uri.https(
       dotenv.env['DATABASE_AUTHORITY'] as String,
-      'products/$id.jsonw',
+      'products/$id.json',
     );
     try {
       final response = await http.put(url,
