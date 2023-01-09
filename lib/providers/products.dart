@@ -7,7 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import './product.dart';
 
 class Products with ChangeNotifier {
-  final List<Product> _items = [
+  List<Product> _items = [
     Product(
       id: 'p1',
       title: 'Red Shirt',
@@ -71,23 +71,37 @@ class Products with ChangeNotifier {
     }
   }
 
-  void updateItem(String id, String title, String description, double price,
-      String imageUrl, bool isFavorite) {
-    final itemIndex = _items.indexWhere((element) => element.id == id);
-    final newProduct = Product(
-      id: id,
-      title: title,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-      isFavorite: isFavorite,
+  Future<void> updateItem(String id, String title, String description,
+      double price, String imageUrl, bool isFavorite) async {
+    final url = Uri.https(
+      dotenv.env['DATABASE_AUTHORITY'] as String,
+      'products/$id.jsonw',
     );
-    if (itemIndex >= 0) {
-      _items[itemIndex] = newProduct;
-    } else {
-      _items.add(newProduct);
+    try {
+      final response = await http.put(url,
+          body: convert.jsonEncode({
+            'title': title,
+            'description': description,
+            'price': price,
+            'imageUrl': imageUrl,
+            'isFavorite': isFavorite,
+          }));
+      final Map<String, dynamic> updatedProduct =
+          convert.jsonDecode(response.body);
+      final productIndex = _items.indexWhere((element) => element.id == id);
+      _items[productIndex] = Product(
+        id: id,
+        title: updatedProduct['title'],
+        description: updatedProduct['description'],
+        price: updatedProduct['price'],
+        imageUrl: updatedProduct['imageUrl'],
+        isFavorite: updatedProduct['isFavorite'],
+      );
+      notifyListeners();
+    } catch (error) {
+      print(error);
+      rethrow;
     }
-    notifyListeners();
   }
 
   Future<void> addItem({
@@ -126,6 +140,42 @@ class Products with ChangeNotifier {
       print(error);
       rethrow;
     }
+  }
+
+  Future<void> getItems() async {
+    try {
+      final url = Uri.https(
+        dotenv.env['DATABASE_AUTHORITY'] as String,
+        dotenv.env['DATABASE_PRODUCT_PATH'] as String,
+      );
+      final response = await http.get(url);
+      final Map<String, dynamic> products = convert.jsonDecode(response.body);
+      final List<Product> items = [];
+      products.forEach((id, product) {
+        items.add(Product(
+          id: id,
+          title: product['title'],
+          description: product['description'],
+          price: product['price'],
+          imageUrl: product['imageUrl'],
+          isFavorite: product['isFavorite'],
+        ));
+      });
+      _items = items;
+      notifyListeners();
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+  }
+
+  Future<void> getItem(String id) async {
+    final query = '?orderBy="\$key"&equalTo="$id"';
+    final url = Uri.https(
+      dotenv.env['DATABASE_AUTHORITY'] as String,
+      (dotenv.env['DATABASE_PRODUCT_PATH'] as String) + query,
+    );
+    final response = await http.get(url);
   }
 
   void removeItem(String id) {
