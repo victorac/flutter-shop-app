@@ -7,10 +7,11 @@ class UserProductItem extends StatelessWidget {
   const UserProductItem(
       {super.key, required this.product, required this.removeItem});
   final Product product;
-  final Function removeItem;
+  final Future<void> Function(String) removeItem;
 
   @override
   Widget build(BuildContext context) {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     return ListTile(
       leading: CircleAvatar(
         backgroundImage: NetworkImage(product.imageUrl),
@@ -47,7 +48,22 @@ class UserProductItem extends StatelessWidget {
                           child: const Text('Delete'),
                         ),
                       ],
-                    )).then((value) => {if (value) removeItem(product.id)}),
+                    )).then((value) async {
+              if (value) {
+                try {
+                  await removeItem(product.id);
+                } catch (error) {
+                  scaffoldMessenger.clearSnackBars();
+                  scaffoldMessenger.showSnackBar(SnackBar(
+                    content: const Text('Error deleting product'),
+                    action: SnackBarAction(
+                      label: 'DISMISS',
+                      onPressed: () => scaffoldMessenger.clearSnackBars(),
+                    ),
+                  ));
+                }
+              }
+            }),
             icon: const Icon(Icons.delete),
           )
         ],

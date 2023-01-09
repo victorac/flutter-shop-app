@@ -3,6 +3,7 @@ import 'dart:convert' as convert;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../models/http_exception.dart';
 
 import './product.dart';
 
@@ -170,16 +171,28 @@ class Products with ChangeNotifier {
   }
 
   Future<void> getItem(String id) async {
-    final query = '?orderBy="\$key"&equalTo="$id"';
     final url = Uri.https(
       dotenv.env['DATABASE_AUTHORITY'] as String,
-      (dotenv.env['DATABASE_PRODUCT_PATH'] as String) + query,
+      'products/$id.json',
     );
     final response = await http.get(url);
   }
 
-  void removeItem(String id) {
-    _items.removeWhere((element) => element.id == id);
+  Future<void> removeItem(String id) async {
+    final url = Uri.https(
+      dotenv.env['DATABASE_AUTHORITY'] as String,
+      'products/$id.json',
+    );
+    final index = _items.indexWhere((element) => element.id == id);
+    Product? productRef = _items[index];
+    _items.removeAt(index);
     notifyListeners();
+    final response = await http.delete(url);
+    if (response.statusCode >= 400) {
+      _items.insert(index, productRef);
+      notifyListeners();
+      throw HttpException('Could not delete product');
+    }
+    productRef = null;
   }
 }
