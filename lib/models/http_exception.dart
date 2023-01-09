@@ -8,3 +8,12 @@ class HttpException implements Exception {
     return message;
   }
 }
+
+class PatchFavoriteItemException implements Exception {
+  final String message = 'Failed to update favorite item';
+
+  @override
+  String toString() {
+    return message;
+  }
+}
