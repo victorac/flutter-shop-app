@@ -23,7 +23,7 @@ class OrderItem {
 }
 
 class Orders with ChangeNotifier {
-  final List<OrderItem> _orders = [];
+  List<OrderItem> _orders = [];
 
   List<OrderItem> get orders {
     return [..._orders];
@@ -53,4 +53,20 @@ class Orders with ChangeNotifier {
       rethrow;
     }
   }
+
+  // Future<void> listOrders() async {
+  //   final url =
+  //       Uri.https(dotenv.env['DATABASE_AUTHORITY'] as String, '/orders.json');
+  //   try {
+  //     final response = await http.get(url);
+  //     final Map<String, dynamic> orders = convert.jsonDecode(response.body);
+  //     orders.forEach((key, item) {
+  //       final itemList = CartItem(id: id, productId: productId, title: title, quantity: quantity, price: price)
+  //       _orders.add(OrderItem(id: key, amount: item['amount'], products: item['products'], dateTime: dateTime))
+  //     });
+  //   } catch (error) {
+  //     print(error);
+  //     rethrow;
+  //   }
+  // }
 }

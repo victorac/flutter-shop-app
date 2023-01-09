@@ -8,6 +8,22 @@ import '../screens/product_detail_screen.dart';
 class ProductItem extends StatelessWidget {
   ProductItem({super.key});
 
+  Future<void> _addItemToCart(Cart cartData, Product product) async {
+    if (cartData.items.containsKey(product.id)) {
+      cartData.updateItem(
+        product.id,
+        product.title,
+        product.price,
+      );
+    } else {
+      cartData.addItem(
+        product.id,
+        product.title,
+        product.price,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -44,22 +60,41 @@ class ProductItem extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           trailing: IconButton(
-            onPressed: () {
-              cartData.addItem(
-                product.id,
-                product.title,
-                product.price,
-              );
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Added item to cart!'),
-                  action: SnackBarAction(
-                    label: "UNDO",
-                    onPressed: () => cartData.removeSingleItem(product.id),
+            onPressed: () async {
+              try {
+                await _addItemToCart(cartData, product);
+                scaffoldMessenger.clearSnackBars();
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: const Text('Added item to cart!'),
+                    action: SnackBarAction(
+                      label: "UNDO",
+                      onPressed: () async {
+                        try {
+                          await cartData.removeSingleItem(product.id);
+                        } catch (error) {
+                          scaffoldMessenger.clearSnackBars();
+                          scaffoldMessenger.showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Error undoing add item to cart',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   ),
-                ),
-              );
+                );
+              } catch (error) {
+                scaffoldMessenger.clearSnackBars();
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed adding item to cart!'),
+                  ),
+                );
+              }
             },
             color: Theme.of(context).colorScheme.secondary,
             icon: const Icon(

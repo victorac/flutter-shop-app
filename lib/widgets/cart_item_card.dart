@@ -6,7 +6,6 @@ import '../providers/cart.dart';
 class CartItemCard extends StatelessWidget {
   const CartItemCard({
     super.key,
-    required this.id,
     required this.productId,
     required this.title,
     required this.quantity,
@@ -14,7 +13,6 @@ class CartItemCard extends StatelessWidget {
     required this.removeItem,
   });
 
-  final String id;
   final String productId;
   final String title;
   final int quantity;
@@ -24,7 +22,7 @@ class CartItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dismissible(
-      key: ValueKey(id),
+      key: ValueKey(productId),
       background: Container(
         color: Theme.of(context).errorColor,
         alignment: Alignment.centerRight,

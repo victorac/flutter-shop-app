@@ -54,7 +54,6 @@ class CartScreen extends StatelessWidget {
                                   .addOrder(cart);
                               cart.clear();
                             } catch (error) {
-                              print(error);
                               scaffoldMessenger.clearSnackBars();
                               scaffoldMessenger.showSnackBar(
                                 const SnackBar(
@@ -76,7 +75,6 @@ class CartScreen extends StatelessWidget {
             child: ListView.builder(
               itemCount: cart.productCount,
               itemBuilder: (context, index) => CartItemCard(
-                id: cartItems[index].id,
                 productId: cartItems[index].productId,
                 title: cartItems[index].title,
                 quantity: cartItems[index].quantity,

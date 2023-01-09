@@ -1,14 +1,18 @@
+import 'dart:convert' as convert;
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import '../models/http_exception.dart';
 
 class CartItem {
-  final String id;
   final String productId;
   final String title;
   final int quantity;
   final double price;
 
   CartItem({
-    required this.id,
     required this.productId,
     required this.title,
     required this.quantity,
@@ -46,55 +50,86 @@ class Cart with ChangeNotifier {
     );
   }
 
-  void addItem(String productId, String title, double price) {
-    if (items.containsKey(productId)) {
-      _items.update(
-        productId,
-        (oldCart) => CartItem(
-          id: oldCart.id,
-          productId: productId,
-          title: title,
-          quantity: oldCart.quantity + 1,
-          price: price,
-        ),
-      );
-    } else {
+  Future<void> updateItem(String productId, String title, double price,
+      {int value = 1}) async {
+    final url = Uri.https(
+        dotenv.env['DATABASE_AUTHORITY'] as String, '/cart/$productId.json');
+    CartItem? cartItemRef = _items[productId];
+    _items.update(
+      productId,
+      (oldCart) => CartItem(
+        productId: productId,
+        title: title,
+        quantity: oldCart.quantity + value,
+        price: price,
+      ),
+    );
+    notifyListeners();
+    final response = await http.patch(url,
+        body: convert.jsonEncode({'quantity': cartItemRef!.quantity + value}));
+    if (response.statusCode >= 400) {
+      _items[productId] = cartItemRef;
+      notifyListeners();
+      throw HttpException('Failed to update cart');
+    }
+    cartItemRef = null;
+  }
+
+  Future<void> addItem(String productId, String title, double price) async {
+    final url = Uri.https(
+        dotenv.env['DATABASE_AUTHORITY'] as String, '/cart/$productId.json');
+    try {
+      await http.put(url,
+          body: convert.jsonEncode({
+            'productId': productId,
+            'title': title,
+            'quantity': 1,
+            'price': price,
+          }));
       _items.putIfAbsent(
         productId,
         () => CartItem(
-          id: DateTime.now().toString(),
           productId: productId,
           title: title,
           quantity: 1,
           price: price,
         ),
       );
+      notifyListeners();
+    } catch (error) {
+      print(error);
+      rethrow;
     }
-    notifyListeners();
   }
 
-  void removeItem(String id) {
+  Future<void> removeItem(String id) async {
+    CartItem? cartItemRef = _items[id];
     _items.remove(id);
     notifyListeners();
+    final url =
+        Uri.https(dotenv.env['DATABASE_AUTHORITY'] as String, '/cart/$id.json');
+    final response = await http.delete(url);
+    if (response.statusCode >= 400) {
+      _items[id] = cartItemRef as CartItem;
+      notifyListeners();
+      cartItemRef = null;
+      throw HttpException('Failed while removing item from cart');
+    }
+    cartItemRef = null;
   }
 
-  void removeSingleItem(String id) {
+  Future<void> removeSingleItem(String id) async {
     if (_items.containsKey(id)) {
-      _items.update(
+      if (_items[id]!.quantity > 1) {
+        await updateItem(
           id,
-          (cartItem) => CartItem(
-                id: cartItem.id,
-                productId: cartItem.productId,
-                title: cartItem.title,
-                quantity: cartItem.quantity - 1,
-                price: cartItem.price,
-              ));
-      int itemQuantity = _items[id]?.quantity ?? 0;
-      if (itemQuantity < 1) {
-        print("reached zero");
-        _items.remove(id);
+          _items[id]!.title,
+          _items[id]!.price,
+          value: -1,
+        );
+      } else {
+        await removeItem(id);
       }
-      notifyListeners();
     }
   }
 
