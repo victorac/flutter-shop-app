@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../screens/cart_screen.dart';
 import '../providers/cart.dart';
+import '../providers/products.dart';
 import '../widgets/badge.dart';
 import '../widgets/products_grid.dart';
 import '../widgets/app_drawer.dart';
@@ -18,6 +19,55 @@ enum ProductsFilter { favorites, all }
 
 class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   bool _filterFavorites = false;
+  bool _isLoading = false;
+  bool _failedListing = false;
+  late bool _isInit;
+
+  @override
+  void initState() {
+    super.initState();
+    _isInit = true;
+  }
+
+  @override
+  void didChangeDependencies() async {
+    super.didChangeDependencies();
+    if (_isInit) {
+      _isLoading = true;
+      try {
+        await Provider.of<Products>(context, listen: false).getItems();
+      } catch (error) {
+        setState(() {
+          _failedListing = true;
+        });
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      _isInit = false;
+    }
+  }
+
+  void retryGetItems() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      await Provider.of<Products>(context, listen: false).getItems();
+      setState(() {
+        _failedListing = false;
+      });
+    } catch (error) {
+      setState(() {
+        _failedListing = true;
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +112,25 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
           )
         ],
       ),
-      body: ProductsGrid(
-        filterFavorites: _filterFavorites,
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _failedListing
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text("Retry"),
+                      IconButton(
+                        onPressed: retryGetItems,
+                        icon: const Icon(Icons.refresh),
+                      ),
+                    ],
+                  ),
+                )
+              : ProductsGrid(
+                  filterFavorites: _filterFavorites,
+                ),
       drawer: const AppDrawer(),
     );
   }
