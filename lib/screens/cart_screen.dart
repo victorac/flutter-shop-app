@@ -52,7 +52,7 @@ class CartScreen extends StatelessWidget {
                             try {
                               await Provider.of<Orders>(context, listen: false)
                                   .addOrder(cart);
-                              cart.clear();
+                              await cart.clear();
                             } catch (error) {
                               scaffoldMessenger.clearSnackBars();
                               scaffoldMessenger.showSnackBar(

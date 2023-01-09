@@ -133,8 +133,19 @@ class Cart with ChangeNotifier {
     }
   }
 
-  void clear() {
+  Future<void> clear() async {
+    Map<String, CartItem>? itemsRef = _items;
     _items = {};
     notifyListeners();
+    final url =
+        Uri.https(dotenv.env['DATABASE_AUTHORITY'] as String, '/cart.json');
+    final response = await http.delete(url);
+    if (response.statusCode >= 400) {
+      _items = itemsRef;
+      itemsRef = null;
+      notifyListeners();
+      throw HttpException('Failed clearing cart');
+    }
+    itemsRef = null;
   }
 }
