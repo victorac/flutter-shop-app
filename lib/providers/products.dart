@@ -150,8 +150,11 @@ class Products with ChangeNotifier {
         dotenv.env['DATABASE_PRODUCT_PATH'] as String,
       );
       final response = await http.get(url);
-      final Map<String, dynamic> products = convert.jsonDecode(response.body);
+      final Map<String, dynamic>? products = convert.jsonDecode(response.body);
       final List<Product> items = [];
+      if (products == null) {
+        return;
+      }
       products.forEach((id, product) {
         items.add(Product(
           id: id,

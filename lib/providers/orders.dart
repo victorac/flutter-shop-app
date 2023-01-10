@@ -33,19 +33,19 @@ class Orders with ChangeNotifier {
     final url =
         Uri.https(dotenv.env['DATABASE_AUTHORITY'] as String, '/orders.json');
     try {
-      final datetime = DateTime.now();
+      final timestamp = DateTime.now();
       final response = await http.post(url,
           body: convert.jsonEncode({
             'amount': cart.total,
             'products': cart.items.values.toList(),
-            'datetime': datetime.toString(),
+            'datetime': timestamp.toIso8601String(),
           }));
       final String id = convert.jsonDecode(response.body)['name'];
       _orders.add(OrderItem(
         id: id,
         amount: cart.total,
         products: cart.items.values.toList(),
-        dateTime: datetime,
+        dateTime: timestamp,
       ));
       notifyListeners();
     } catch (error) {
@@ -54,19 +54,40 @@ class Orders with ChangeNotifier {
     }
   }
 
-  // Future<void> listOrders() async {
-  //   final url =
-  //       Uri.https(dotenv.env['DATABASE_AUTHORITY'] as String, '/orders.json');
-  //   try {
-  //     final response = await http.get(url);
-  //     final Map<String, dynamic> orders = convert.jsonDecode(response.body);
-  //     orders.forEach((key, item) {
-  //       final itemList = CartItem(id: id, productId: productId, title: title, quantity: quantity, price: price)
-  //       _orders.add(OrderItem(id: key, amount: item['amount'], products: item['products'], dateTime: dateTime))
-  //     });
-  //   } catch (error) {
-  //     print(error);
-  //     rethrow;
-  //   }
-  // }
+  Future<void> listOrders() async {
+    final url =
+        Uri.https(dotenv.env['DATABASE_AUTHORITY'] as String, '/orders.json');
+    try {
+      final response = await http.get(url);
+      final Map<String, dynamic>? orders = convert.jsonDecode(response.body);
+      if (orders == null) {
+        return;
+      }
+      List<OrderItem> loadedItems = [];
+      orders.forEach((key, item) {
+        loadedItems.add(
+          OrderItem(
+            id: key,
+            amount: item['amount'],
+            products: (item['products'] as List<dynamic>)
+                .map(
+                  (item) => CartItem(
+                    productId: item['productId'],
+                    title: item['title'],
+                    quantity: item['quantity'],
+                    price: item['price'],
+                  ),
+                )
+                .toList(),
+            dateTime: DateTime.parse(item['datetime']),
+          ),
+        );
+      });
+      _orders = loadedItems.reversed.toList();
+      notifyListeners();
+    } catch (error) {
+      // print(error);
+      rethrow;
+    }
+  }
 }
