@@ -13,60 +13,51 @@ class OrdersScreen extends StatefulWidget {
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
-  bool _isLoading = false;
-  bool _failedLoading = false;
+  late Future _ordersFuture;
+
+  Future _obtainOrdersFuture() {
+    return Provider.of<orders_provider.Orders>(context, listen: false)
+        .listOrders();
+  }
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration.zero, tryFetchOrders);
-  }
-
-  Future<void> tryFetchOrders() {
-    setState(() {
-      _isLoading = true;
-      _failedLoading = false;
-    });
-    return Provider.of<orders_provider.Orders>(context, listen: false)
-        .listOrders()
-        .catchError(
-      (error) {
-        setState(() {
-          _failedLoading = true;
-        });
-      },
-    ).whenComplete(
-      () => setState(
-        () => _isLoading = false,
-      ),
-    );
+    _ordersFuture = _obtainOrdersFuture();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ordersData = Provider.of<orders_provider.Orders>(context);
     final appBar = AppBar(
       title: const Text('Your order'),
     );
     return Scaffold(
       appBar: appBar,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: () => tryFetchOrders(),
-              child: _failedLoading
-                  ? Center(
-                      child: ElevatedButton(
-                          onPressed: () async => await tryFetchOrders(),
-                          child: Text('Retry')),
-                    )
-                  : ListView.builder(
-                      itemCount: ordersData.orders.length,
-                      itemBuilder: (context, index) => OrderItem(
-                        order: ordersData.orders[index],
-                      ),
-                    ),
+      body: FutureBuilder(
+        future: _ordersFuture,
+        builder: (BuildContext ctx, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: ElevatedButton(
+                  onPressed: () => setState(() {
+                        _ordersFuture = _obtainOrdersFuture();
+                      }),
+                  child: const Text('Retry')),
+            );
+          }
+          return Consumer<orders_provider.Orders>(
+            builder: (context, ordersData, child) => ListView.builder(
+              itemCount: ordersData.orders.length,
+              itemBuilder: (context, index) => OrderItem(
+                order: ordersData.orders[index],
+              ),
             ),
+          );
+        },
+      ),
       drawer: const AppDrawer(),
     );
   }
