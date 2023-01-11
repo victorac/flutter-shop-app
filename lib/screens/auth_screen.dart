@@ -16,6 +16,7 @@ class AuthScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final deviceSize = MediaQuery.of(context).size;
+    final topPadding = MediaQuery.of(context).padding.top;
     return Scaffold(
         body: Stack(children: [
       Container(
@@ -34,49 +35,46 @@ class AuthScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Stack(
-                children: [
-                  Align(
-                    alignment: Alignment.center,
-                    child: Container(
-                      height: 60,
-                      width: 200,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8.0, horizontal: 94.0),
-                      transform: Matrix4.rotationZ(-10 * pi / 180)
-                        ..translate(-5.0, 25.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                        color: theme.colorScheme.secondary,
-                        boxShadow: const [
-                          BoxShadow(
-                            blurRadius: 8,
-                            color: Colors.black26,
-                            offset: Offset(0, 2),
-                          )
-                        ],
+              Flexible(
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.center,
+                      child: Container(
+                        height: 60,
+                        width: 200,
+                        transform: Matrix4.rotationZ(-10 * pi / 180)
+                          ..translate(-5.0, 25.0),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(5),
+                          color: theme.colorScheme.secondary,
+                          boxShadow: const [
+                            BoxShadow(
+                              blurRadius: 8,
+                              color: Colors.black26,
+                              offset: Offset(0, 2),
+                            )
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  Container(
-                    alignment: Alignment.center,
-                    child: Text(
-                      'MyShop',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSecondary,
-                        fontSize: 50,
-                        fontFamily: 'Anton',
-                        fontWeight: FontWeight.normal,
+                    Container(
+                      alignment: Alignment.center,
+                      child: Text(
+                        'MyShop',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSecondary,
+                          fontSize: 50,
+                          fontFamily: 'Anton',
+                          fontWeight: FontWeight.normal,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(
-                height: 35,
-              ),
-              AuthForm(),
+              Flexible(flex: deviceSize.width > 600 ? 2 : 1, child: AuthForm()),
             ],
           ),
         ),
