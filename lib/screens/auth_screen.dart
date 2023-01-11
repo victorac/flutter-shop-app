@@ -15,74 +15,73 @@ class AuthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final deviceSize = MediaQuery.of(context).size;
     return Scaffold(
-      body: LayoutBuilder(
-        builder: ((BuildContext context, BoxConstraints viewportConstraints) {
-          return Stack(children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.amber.shade300, Colors.red],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-            ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Align(
-                  alignment: Alignment.center,
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 80,
-                        width: 300,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8.0, horizontal: 94.0),
-                        transform: Matrix4.rotationZ(-10 * pi / 180)
-                          ..translate(12.0, 32.0),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(5),
-                          color: theme.colorScheme.secondary,
-                          boxShadow: const [
-                            BoxShadow(
-                              blurRadius: 8,
-                              color: Colors.black26,
-                              offset: Offset(0, 2),
-                            )
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8.0,
-                          horizontal: 94.0,
-                        ),
-                        child: Text(
-                          'MyShop',
-                          style: TextStyle(
-                            color: theme.colorScheme.onSecondary,
-                            fontSize: 50,
-                            fontFamily: 'Anton',
-                            fontWeight: FontWeight.normal,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(
-                  height: 35,
-                ),
-                AuthForm(),
-              ],
-            ),
-          ]);
-        }),
+        body: Stack(children: [
+      Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.amber.shade300, Colors.red],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
       ),
-    );
+      SingleChildScrollView(
+        child: SizedBox(
+          width: deviceSize.width,
+          height: deviceSize.height,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: Container(
+                      height: 60,
+                      width: 200,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8.0, horizontal: 94.0),
+                      transform: Matrix4.rotationZ(-10 * pi / 180)
+                        ..translate(-5.0, 25.0),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(5),
+                        color: theme.colorScheme.secondary,
+                        boxShadow: const [
+                          BoxShadow(
+                            blurRadius: 8,
+                            color: Colors.black26,
+                            offset: Offset(0, 2),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    alignment: Alignment.center,
+                    child: Text(
+                      'MyShop',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondary,
+                        fontSize: 50,
+                        fontFamily: 'Anton',
+                        fontWeight: FontWeight.normal,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 35,
+              ),
+              AuthForm(),
+            ],
+          ),
+        ),
+      ),
+    ]));
   }
 }
 
@@ -131,6 +130,7 @@ class _LoginFormState extends State<LoginForm> {
   Widget build(BuildContext context) {
     final deviceSize = MediaQuery.of(context).size;
     return Card(
+      elevation: 20,
       child: Container(
         constraints: BoxConstraints(
           maxHeight: deviceSize.height * 0.5,
