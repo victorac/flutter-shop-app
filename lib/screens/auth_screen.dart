@@ -16,7 +16,6 @@ class AuthScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final deviceSize = MediaQuery.of(context).size;
-    final topPadding = MediaQuery.of(context).padding.top;
     return Scaffold(
         body: Stack(children: [
       Container(
@@ -99,18 +98,29 @@ class _AuthFormState extends State<AuthForm> {
     _authMode = AuthMode.login;
   }
 
+  Widget _buildTextButton() {
+    return TextButton(
+      style: TextButton.styleFrom(foregroundColor: Colors.black),
+      onPressed: () => setState(() {
+        _authMode =
+            _authMode == AuthMode.login ? AuthMode.signup : AuthMode.login;
+      }),
+      child: _authMode == AuthMode.login
+          ? const Text("Sign up")
+          : const Text("Log in"),
+    );
+  }
+
+  Widget _buildAuthCard() {
+    return _authMode == AuthMode.login ? const LoginForm() : const SignupForm();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _authMode == AuthMode.login ? LoginForm() : SignupForm(),
-        ElevatedButton(
-          onPressed: () => setState(() {
-            _authMode =
-                _authMode == AuthMode.login ? AuthMode.signup : AuthMode.login;
-          }),
-          child: _authMode == AuthMode.login ? Text("Sign up") : Text("Log in"),
-        )
+        Flexible(flex: 3, child: _buildAuthCard()),
+        Flexible(flex: 1, child: _buildTextButton()),
       ],
     );
   }
@@ -124,42 +134,79 @@ class LoginForm extends StatefulWidget {
 }
 
 class _LoginFormState extends State<LoginForm> {
+  final GlobalKey<FormState> _formKey = GlobalKey();
+
+  final _formFields = {
+    'email': '',
+    'password': '',
+  };
+
+  void _saveForm() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    _formKey.currentState!.save();
+  }
+
   @override
   Widget build(BuildContext context) {
     final deviceSize = MediaQuery.of(context).size;
-    return Card(
-      elevation: 20,
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: deviceSize.height * 0.5,
-          maxWidth: deviceSize.width * 0.75,
-        ),
-        padding: const EdgeInsets.all(10.0),
-        child: Form(
-            child: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Username'),
-                textInputAction: TextInputAction.next,
+    return Column(
+      children: [
+        Flexible(
+          flex: 2,
+          child: Card(
+            elevation: 20,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: deviceSize.width * 0.75,
               ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Password'),
-                textInputAction: TextInputAction.next,
-              ),
-              TextFormField(
-                decoration:
-                    const InputDecoration(labelText: 'Confirm password'),
-                textInputAction: TextInputAction.next,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Email'),
-                textInputAction: TextInputAction.next,
-              ),
-            ],
+              padding: const EdgeInsets.all(10.0),
+              child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          decoration: const InputDecoration(labelText: 'Email'),
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          onSaved: (newValue) =>
+                              _formFields['email'] = newValue as String,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'enter an email';
+                            }
+                            return null;
+                          },
+                        ),
+                        TextFormField(
+                          decoration:
+                              const InputDecoration(labelText: 'Password'),
+                          textInputAction: TextInputAction.next,
+                          obscureText: true,
+                          onSaved: (newValue) =>
+                              _formFields['password'] = newValue as String,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'enter your password';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  )),
+            ),
           ),
-        )),
-      ),
+        ),
+        Flexible(
+          child: ElevatedButton(
+            onPressed: _saveForm,
+            child: const Text('Login'),
+          ),
+        )
+      ],
     );
   }
 }
@@ -172,8 +219,107 @@ class SignupForm extends StatefulWidget {
 }
 
 class _SignupFormState extends State<SignupForm> {
+  final GlobalKey<FormState> _formKey = GlobalKey();
+  late TextEditingController _passwordController;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _passwordController.dispose();
+  }
+
+  final _formFields = {
+    'email': '',
+    'password': '',
+  };
+
+  void _saveForm() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    _formKey.currentState!.save();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container();
+    final deviceSize = MediaQuery.of(context).size;
+    return Column(
+      children: [
+        Flexible(
+          flex: 3,
+          child: Card(
+            elevation: 20,
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: deviceSize.width * 0.75,
+              ),
+              padding: const EdgeInsets.all(10.0),
+              child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          decoration: const InputDecoration(labelText: 'Email'),
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          onSaved: (newValue) =>
+                              _formFields['email'] = newValue as String,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'enter an email';
+                            }
+                            return null;
+                          },
+                        ),
+                        TextFormField(
+                          decoration:
+                              const InputDecoration(labelText: 'Password'),
+                          textInputAction: TextInputAction.next,
+                          obscureText: true,
+                          controller: _passwordController,
+                          onSaved: (newValue) =>
+                              _formFields['password'] = newValue as String,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'enter your password';
+                            }
+                            return null;
+                          },
+                        ),
+                        TextFormField(
+                          decoration: const InputDecoration(
+                              labelText: 'Confirm password'),
+                          textInputAction: TextInputAction.done,
+                          obscureText: true,
+                          validator: (value) {
+                            if (value == null ||
+                                value.isEmpty ||
+                                value != _passwordController.text) {
+                              return 'passwords don\'t match';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  )),
+            ),
+          ),
+        ),
+        Flexible(
+          child: ElevatedButton(
+            onPressed: _saveForm,
+            child: const Text('Signup'),
+          ),
+        )
+      ],
+    );
   }
 }
