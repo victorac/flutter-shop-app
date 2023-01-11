@@ -11,6 +11,7 @@ import './screens/product_detail_screen.dart';
 import './screens/product_overview_screen.dart';
 import './screens/user_products_screen.dart';
 import './screens/edit_product_screen.dart';
+import './screens/auth_screen.dart';
 
 Future main() async {
   await dotenv.load(fileName: ".env");
@@ -43,13 +44,14 @@ class App extends StatelessWidget {
       child: MaterialApp(
         title: "MyShop",
         theme: themeData,
-        home: ProductOverviewScreen(),
+        home: AuthScreen(),
         routes: {
           ProductDetailScreen.routeName: (context) => ProductDetailScreen(),
           CartScreen.routeName: (context) => CartScreen(),
           OrdersScreen.routeName: (context) => OrdersScreen(),
           UserProductsScreen.routeName: (context) => UserProductsScreen(),
           EditProductScreen.routeName: (context) => EditProductScreen(),
+          AuthScreen.routeName: (context) => AuthScreen(),
         },
       ),
     );
