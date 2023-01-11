@@ -21,6 +21,7 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   bool _filterFavorites = false;
   bool _isLoading = false;
   bool _fetchingError = false;
+  bool _isRetry = false;
   late bool _isInit;
 
   @override
@@ -48,12 +49,17 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   }
 
   Future<void> _refreshItems() async {
+    setState(() {
+      _isRetry = true;
+    });
     try {
       await Provider.of<Products>(context, listen: false).getItems();
     } catch (error) {
       setState(() {
         _fetchingError = true;
       });
+    } finally {
+      _isRetry = false;
     }
   }
 
@@ -106,9 +112,26 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
             )
           : RefreshIndicator(
               onRefresh: _refreshItems,
-              child: ProductsGrid(
-                filterFavorites: _filterFavorites,
-              ),
+              child: _fetchingError
+                  ? Center(
+                      child: ElevatedButton(
+                        onPressed: _refreshItems,
+                        child: _isRetry
+                            ? const FractionallySizedBox(
+                                widthFactor: 0.05,
+                                heightFactor: 0.03,
+                                alignment: Alignment.center,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.black,
+                                ),
+                              )
+                            : const Text('Retry'),
+                      ),
+                    )
+                  : ProductsGrid(
+                      filterFavorites: _filterFavorites,
+                    ),
             ),
       drawer: const AppDrawer(),
     );

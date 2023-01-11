@@ -150,6 +150,10 @@ class Products with ChangeNotifier {
         dotenv.env['DATABASE_PRODUCT_PATH'] as String,
       );
       final response = await http.get(url);
+      if (response.statusCode >= 400) {
+        final responseBody = convert.jsonDecode(response.body);
+        throw HttpException('Couldn\'t fetch data $responseBody');
+      }
       final Map<String, dynamic>? products = convert.jsonDecode(response.body);
       final List<Product> items = [];
       if (products == null) {
