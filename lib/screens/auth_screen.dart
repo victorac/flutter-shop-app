@@ -17,68 +17,75 @@ class AuthScreen extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final deviceSize = MediaQuery.of(context).size;
     return Scaffold(
-        body: Stack(children: [
-      Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.amber.shade300, Colors.red],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-      ),
-      SingleChildScrollView(
-        child: SizedBox(
-          width: deviceSize.width,
-          height: deviceSize.height,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Stack(
-                  children: [
-                    Align(
-                      alignment: Alignment.center,
-                      child: Container(
-                        height: 60,
-                        width: 200,
-                        transform: Matrix4.rotationZ(-10 * pi / 180)
-                          ..translate(-5.0, 25.0),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(5),
-                          color: theme.colorScheme.secondary,
-                          boxShadow: const [
-                            BoxShadow(
-                              blurRadius: 8,
-                              color: Colors.black26,
-                              offset: Offset(0, 2),
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                    Container(
-                      alignment: Alignment.center,
-                      child: Text(
-                        'MyShop',
-                        style: TextStyle(
-                          color: theme.colorScheme.onSecondary,
-                          fontSize: 50,
-                          fontFamily: 'Anton',
-                          fontWeight: FontWeight.normal,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.amber.shade300, Colors.red],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              Flexible(flex: deviceSize.width > 600 ? 2 : 1, child: AuthForm()),
-            ],
+            ),
           ),
-        ),
+          SingleChildScrollView(
+            child: SizedBox(
+              width: deviceSize.width,
+              height: deviceSize.height,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Stack(
+                      children: [
+                        Align(
+                          alignment: Alignment.center,
+                          child: Container(
+                            height: 60,
+                            width: 200,
+                            transform: Matrix4.rotationZ(-10 * pi / 180)
+                              ..translate(-5.0, 25.0),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              color: theme.colorScheme.secondary,
+                              boxShadow: const [
+                                BoxShadow(
+                                  blurRadius: 8,
+                                  color: Colors.black26,
+                                  offset: Offset(0, 2),
+                                )
+                              ],
+                            ),
+                          ),
+                        ),
+                        Container(
+                          alignment: Alignment.center,
+                          child: Text(
+                            'MyShop',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSecondary,
+                              fontSize: 50,
+                              fontFamily: 'Anton',
+                              fontWeight: FontWeight.normal,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    fit: FlexFit.tight,
+                    flex: deviceSize.width > 600 ? 2 : 1,
+                    child: AuthForm(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
-    ]));
+    );
   }
 }
 
@@ -135,17 +142,27 @@ class LoginForm extends StatefulWidget {
 
 class _LoginFormState extends State<LoginForm> {
   final GlobalKey<FormState> _formKey = GlobalKey();
+  final GlobalKey _buttonKey = GlobalKey();
+  bool _loading = false;
 
   final _formFields = {
     'email': '',
     'password': '',
   };
 
-  void _saveForm() {
+  Future<void> _saveForm() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     _formKey.currentState!.save();
+    setState(() {
+      _loading = true;
+    });
+    // authenticate
+    try {} catch (error) {}
+    setState(() {
+      _loading = false;
+    });
   }
 
   @override
@@ -157,54 +174,68 @@ class _LoginFormState extends State<LoginForm> {
           flex: 2,
           child: Card(
             elevation: 20,
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: deviceSize.width * 0.75,
+            child: Focus(
+              onFocusChange: (value) async {
+                if (value) {
+                  await Future.delayed(const Duration(milliseconds: 500));
+                  RenderObject? object =
+                      _buttonKey.currentContext?.findRenderObject();
+                  object?.showOnScreen();
+                }
+              },
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: deviceSize.width * 0.75,
+                ),
+                padding: const EdgeInsets.all(10.0),
+                child: Form(
+                    key: _formKey,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            decoration:
+                                const InputDecoration(labelText: 'Email'),
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            onSaved: (newValue) =>
+                                _formFields['email'] = newValue as String,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'enter an email';
+                              }
+                              return null;
+                            },
+                          ),
+                          TextFormField(
+                            decoration:
+                                const InputDecoration(labelText: 'Password'),
+                            textInputAction: TextInputAction.next,
+                            obscureText: true,
+                            onSaved: (newValue) =>
+                                _formFields['password'] = newValue as String,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'enter your password';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    )),
               ),
-              padding: const EdgeInsets.all(10.0),
-              child: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          decoration: const InputDecoration(labelText: 'Email'),
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          onSaved: (newValue) =>
-                              _formFields['email'] = newValue as String,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'enter an email';
-                            }
-                            return null;
-                          },
-                        ),
-                        TextFormField(
-                          decoration:
-                              const InputDecoration(labelText: 'Password'),
-                          textInputAction: TextInputAction.next,
-                          obscureText: true,
-                          onSaved: (newValue) =>
-                              _formFields['password'] = newValue as String,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'enter your password';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  )),
             ),
           ),
         ),
         Flexible(
-          child: ElevatedButton(
-            onPressed: _saveForm,
-            child: const Text('Login'),
-          ),
+          child: _loading
+              ? const CircularProgressIndicator()
+              : ElevatedButton(
+                  key: _buttonKey,
+                  onPressed: _saveForm,
+                  child: const Text('Login'),
+                ),
         )
       ],
     );
@@ -221,6 +252,8 @@ class SignupForm extends StatefulWidget {
 class _SignupFormState extends State<SignupForm> {
   final GlobalKey<FormState> _formKey = GlobalKey();
   late TextEditingController _passwordController;
+  bool _loading = false;
+  final GlobalKey _buttonKey = GlobalKey();
 
   @override
   void initState() {
@@ -239,11 +272,19 @@ class _SignupFormState extends State<SignupForm> {
     'password': '',
   };
 
-  void _saveForm() {
+  Future<void> _saveForm() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     _formKey.currentState!.save();
+    setState(() {
+      _loading = true;
+    });
+    // authenticate
+    try {} catch (error) {}
+    setState(() {
+      _loading = false;
+    });
   }
 
   @override
@@ -252,7 +293,7 @@ class _SignupFormState extends State<SignupForm> {
     return Column(
       children: [
         Flexible(
-          flex: 3,
+          flex: 4,
           child: Card(
             elevation: 20,
             child: Container(
@@ -260,64 +301,78 @@ class _SignupFormState extends State<SignupForm> {
                 maxWidth: deviceSize.width * 0.75,
               ),
               padding: const EdgeInsets.all(10.0),
-              child: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          decoration: const InputDecoration(labelText: 'Email'),
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          onSaved: (newValue) =>
-                              _formFields['email'] = newValue as String,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'enter an email';
-                            }
-                            return null;
-                          },
-                        ),
-                        TextFormField(
-                          decoration:
-                              const InputDecoration(labelText: 'Password'),
-                          textInputAction: TextInputAction.next,
-                          obscureText: true,
-                          controller: _passwordController,
-                          onSaved: (newValue) =>
-                              _formFields['password'] = newValue as String,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'enter your password';
-                            }
-                            return null;
-                          },
-                        ),
-                        TextFormField(
-                          decoration: const InputDecoration(
-                              labelText: 'Confirm password'),
-                          textInputAction: TextInputAction.done,
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null ||
-                                value.isEmpty ||
-                                value != _passwordController.text) {
-                              return 'passwords don\'t match';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  )),
+              child: Focus(
+                onFocusChange: (value) async {
+                  if (value) {
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    RenderObject? object =
+                        _buttonKey.currentContext?.findRenderObject();
+                    object?.showOnScreen();
+                  }
+                },
+                child: Form(
+                    key: _formKey,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            decoration:
+                                const InputDecoration(labelText: 'Email'),
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            onSaved: (newValue) =>
+                                _formFields['email'] = newValue as String,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'enter an email';
+                              }
+                              return null;
+                            },
+                          ),
+                          TextFormField(
+                            decoration:
+                                const InputDecoration(labelText: 'Password'),
+                            textInputAction: TextInputAction.next,
+                            obscureText: true,
+                            controller: _passwordController,
+                            onSaved: (newValue) =>
+                                _formFields['password'] = newValue as String,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'enter your password';
+                              }
+                              return null;
+                            },
+                          ),
+                          TextFormField(
+                            decoration: const InputDecoration(
+                                labelText: 'Confirm password'),
+                            textInputAction: TextInputAction.done,
+                            obscureText: true,
+                            validator: (value) {
+                              if (value == null ||
+                                  value.isEmpty ||
+                                  value != _passwordController.text) {
+                                return 'passwords don\'t match';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    )),
+              ),
             ),
           ),
         ),
         Flexible(
-          child: ElevatedButton(
-            onPressed: _saveForm,
-            child: const Text('Signup'),
-          ),
+          child: _loading
+              ? const CircularProgressIndicator()
+              : ElevatedButton(
+                  key: _buttonKey,
+                  onPressed: _saveForm,
+                  child: const Text('Signup'),
+                ),
         )
       ],
     );
