@@ -28,7 +28,11 @@ class CartItem {
 }
 
 class Cart with ChangeNotifier {
-  Map<String, CartItem> _items = {};
+  Cart([this.uid, this.token, items]) : _items = items ?? {};
+
+  String? uid;
+  String? token;
+  late Map<String, CartItem> _items;
 
   Map<String, CartItem> get items {
     return {..._items};
@@ -52,8 +56,8 @@ class Cart with ChangeNotifier {
 
   Future<void> updateItem(String productId, String title, double price,
       {int value = 1}) async {
-    final url = Uri.https(
-        dotenv.env['DATABASE_AUTHORITY'] as String, '/cart/$productId.json');
+    final url = Uri.parse(
+        'https://${dotenv.env['DATABASE_AUTHORITY']}/users/$uid/cart/$productId.json?auth=$token');
     CartItem? cartItemRef = _items[productId];
     _items.update(
       productId,
@@ -76,8 +80,8 @@ class Cart with ChangeNotifier {
   }
 
   Future<void> addItem(String productId, String title, double price) async {
-    final url = Uri.https(
-        dotenv.env['DATABASE_AUTHORITY'] as String, '/cart/$productId.json');
+    final url = Uri.parse(
+        'https://${dotenv.env['DATABASE_AUTHORITY']}/users/$uid/cart/$productId.json?auth=$token');
     try {
       await http.put(url,
           body: convert.jsonEncode({
@@ -102,15 +106,15 @@ class Cart with ChangeNotifier {
     }
   }
 
-  Future<void> removeItem(String id) async {
-    CartItem? cartItemRef = _items[id];
-    _items.remove(id);
+  Future<void> removeItem(String productId) async {
+    CartItem? cartItemRef = _items[productId];
+    _items.remove(productId);
     notifyListeners();
-    final url =
-        Uri.https(dotenv.env['DATABASE_AUTHORITY'] as String, '/cart/$id.json');
+    final url = Uri.parse(
+        'https://${dotenv.env['DATABASE_AUTHORITY']}/users/$uid/cart/$productId.json?auth=$token');
     final response = await http.delete(url);
     if (response.statusCode >= 400) {
-      _items[id] = cartItemRef as CartItem;
+      _items[productId] = cartItemRef as CartItem;
       notifyListeners();
       cartItemRef = null;
       throw HttpException('Failed while removing item from cart');
@@ -137,8 +141,8 @@ class Cart with ChangeNotifier {
     Map<String, CartItem>? itemsRef = _items;
     _items = {};
     notifyListeners();
-    final url =
-        Uri.https(dotenv.env['DATABASE_AUTHORITY'] as String, '/cart.json');
+    final url = Uri.parse(
+        'https://${dotenv.env['DATABASE_AUTHORITY']}/users/$uid/cart.json?auth=$token');
     final response = await http.delete(url);
     if (response.statusCode >= 400) {
       _items = itemsRef;

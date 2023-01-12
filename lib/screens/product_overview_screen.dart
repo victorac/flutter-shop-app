@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shop_app/providers/auth.dart';
 
 import '../screens/cart_screen.dart';
 import '../providers/cart.dart';
@@ -25,8 +24,6 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   bool _fetchingError = false;
   bool _isRetry = false;
   late bool _isInit;
-  String? _uid;
-  String? _token;
 
   @override
   void initState() {
@@ -38,12 +35,9 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   void didChangeDependencies() async {
     super.didChangeDependencies();
     if (_isInit) {
-      _uid = Provider.of<Auth>(context).userId;
-      _token = Provider.of<Auth>(context).token;
       _isLoading = true;
       try {
-        await Provider.of<Products>(context, listen: false)
-            .getItems(_uid as String, _token as String);
+        await Provider.of<Products>(context, listen: false).getItems();
       } catch (error) {
         print('error from start?');
         print(error);
@@ -62,8 +56,7 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
       _isRetry = true;
     });
     try {
-      await Provider.of<Products>(context, listen: false)
-          .getItems(_uid as String, _token as String);
+      await Provider.of<Products>(context, listen: false).getItems();
       setState(() {
         _fetchingError = false;
       });
