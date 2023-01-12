@@ -22,6 +22,10 @@ Future main() async {
 class App extends StatelessWidget {
   const App({super.key});
 
+  Widget authenticated(Auth auth, Widget widget) {
+    return auth.isLoggedIn ? widget : AuthScreen();
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryThemeData =
@@ -45,19 +49,27 @@ class App extends StatelessWidget {
           create: (context) => Orders(),
         ),
       ],
-      child: MaterialApp(
-        title: "MyShop",
-        theme: themeData,
-        home: AuthScreen(),
-        routes: {
-          ProductOverviewScreen.routeName: (context) => ProductOverviewScreen(),
-          ProductDetailScreen.routeName: (context) => ProductDetailScreen(),
-          CartScreen.routeName: (context) => CartScreen(),
-          OrdersScreen.routeName: (context) => OrdersScreen(),
-          UserProductsScreen.routeName: (context) => UserProductsScreen(),
-          EditProductScreen.routeName: (context) => EditProductScreen(),
-          AuthScreen.routeName: (context) => AuthScreen(),
-        },
+      child: Consumer<Auth>(
+        builder: (context, auth, child) => MaterialApp(
+          title: "MyShop",
+          theme: themeData,
+          home: authenticated(auth, ProductOverviewScreen()),
+          routes: {
+            ProductOverviewScreen.routeName: (context) =>
+                authenticated(auth, ProductOverviewScreen()),
+            ProductDetailScreen.routeName: (context) =>
+                authenticated(auth, ProductDetailScreen()),
+            CartScreen.routeName: (context) =>
+                authenticated(auth, CartScreen()),
+            OrdersScreen.routeName: (context) =>
+                authenticated(auth, OrdersScreen()),
+            UserProductsScreen.routeName: (context) =>
+                authenticated(auth, UserProductsScreen()),
+            EditProductScreen.routeName: (context) =>
+                authenticated(auth, EditProductScreen()),
+            AuthScreen.routeName: (context) => AuthScreen(),
+          },
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shop_app/models/http_exception.dart';
 import 'package:shop_app/providers/auth.dart';
 import 'package:shop_app/screens/product_overview_screen.dart';
 
@@ -80,7 +81,7 @@ class AuthScreen extends StatelessWidget {
                   Flexible(
                     fit: FlexFit.tight,
                     flex: deviceSize.width > 600 ? 2 : 1,
-                    child: AuthForm(),
+                    child: AuthArea(),
                   ),
                 ],
               ),
@@ -92,23 +93,17 @@ class AuthScreen extends StatelessWidget {
   }
 }
 
-class AuthForm extends StatefulWidget {
-  const AuthForm({super.key});
+class AuthArea extends StatefulWidget {
+  const AuthArea({super.key});
 
   @override
-  State<AuthForm> createState() => _AuthFormState();
+  State<AuthArea> createState() => _AuthAreaState();
 }
 
-class _AuthFormState extends State<AuthForm> {
-  late AuthMode _authMode;
+class _AuthAreaState extends State<AuthArea> {
+  AuthMode _authMode = AuthMode.login;
 
-  @override
-  void initState() {
-    super.initState();
-    _authMode = AuthMode.login;
-  }
-
-  Widget _buildTextButton() {
+  Widget _buildSwitchAuthModeTextButton() {
     return TextButton(
       style: TextButton.styleFrom(foregroundColor: Colors.black),
       onPressed: () => setState(() {
@@ -121,37 +116,64 @@ class _AuthFormState extends State<AuthForm> {
     );
   }
 
-  Widget _buildAuthCard() {
-    return _authMode == AuthMode.login ? const LoginForm() : const SignupForm();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Flexible(flex: 3, child: _buildAuthCard()),
-        Flexible(flex: 1, child: _buildTextButton()),
+        Flexible(flex: 3, child: AuthForm(_authMode)),
+        Flexible(flex: 1, child: _buildSwitchAuthModeTextButton()),
       ],
     );
   }
 }
 
-class LoginForm extends StatefulWidget {
-  const LoginForm({super.key});
+class AuthForm extends StatefulWidget {
+  const AuthForm(this.authMode, {super.key});
+
+  final AuthMode authMode;
 
   @override
-  State<LoginForm> createState() => _LoginFormState();
+  State<AuthForm> createState() => _AuthFormState();
 }
 
-class _LoginFormState extends State<LoginForm> {
+class _AuthFormState extends State<AuthForm> {
   final GlobalKey<FormState> _formKey = GlobalKey();
   final GlobalKey _buttonKey = GlobalKey();
   bool _loading = false;
-  bool _error = false;
-  final _formFields = {
+  final Map<String, String> _formFields = {
     'email': '',
     'password': '',
   };
+  late TextEditingController _passwordController;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _showErrorDialog(errorMessage) {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text("Error"),
+            content: Text(errorMessage),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text("Okay"),
+              ),
+            ],
+          );
+        });
+  }
 
   Future<void> _saveForm() async {
     if (!_formKey.currentState!.validate()) {
@@ -161,20 +183,88 @@ class _LoginFormState extends State<LoginForm> {
     setState(() {
       _loading = true;
     });
-    final navigator = Navigator.of(context);
     try {
-      await Provider.of<Auth>(context, listen: false).signin(
-        _formFields['email'] as String,
-        _formFields['password'] as String,
-      );
-      navigator.pushReplacementNamed(ProductOverviewScreen.routeName);
+      if (widget.authMode == AuthMode.login) {
+        await Provider.of<Auth>(context, listen: false).signin(
+          _formFields['email'] as String,
+          _formFields['password'] as String,
+        );
+      } else {
+        await Provider.of<Auth>(context, listen: false).signup(
+          _formFields['email'] as String,
+          _formFields['password'] as String,
+        );
+      }
+    } on HttpException catch (error) {
+      String errorMessage = error.toString();
+      if (errorMessage.contains("EMAIL_EXISTS")) {
+        errorMessage = 'This email address is already in use.';
+      } else if (errorMessage.contains("INVALID_EMAIL")) {
+        errorMessage = 'This is not a valid email address.';
+      } else if (errorMessage.contains("WEAK_PASSWORD")) {
+        errorMessage = 'This password is too weak.';
+      } else if (errorMessage.contains("EMAIL_NOT_FOUND") ||
+          errorMessage.contains("INVALID_PASSWORD")) {
+        errorMessage = 'Email or password is incorrect';
+      }
+      _showErrorDialog(errorMessage);
     } catch (error) {
-      print(error);
-      setState(() => _error = true);
+      const errorMessage =
+          'Could not authenticate user. Please try again later.';
+      _showErrorDialog(errorMessage);
     }
     setState(() {
       _loading = false;
     });
+  }
+
+  Widget _buildEmailField() {
+    return TextFormField(
+      decoration: const InputDecoration(labelText: 'Email'),
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.next,
+      onSaved: (newValue) => _formFields['email'] = newValue as String,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'enter an email';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextFormField(
+      decoration: const InputDecoration(labelText: 'Password'),
+      textInputAction: widget.authMode == AuthMode.login
+          ? TextInputAction.done
+          : TextInputAction.next,
+      obscureText: true,
+      controller: _passwordController,
+      onSaved: (newValue) => _formFields['password'] = newValue as String,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'enter your password';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildConfirmPasswordField() {
+    return TextFormField(
+      decoration: const InputDecoration(labelText: 'Confirm password'),
+      textInputAction: TextInputAction.done,
+      obscureText: true,
+      validator: (value) {
+        if (value == null ||
+            value.isEmpty ||
+            value != _passwordController.text) {
+          return 'passwords don\'t match';
+        }
+        return null;
+      },
+    );
   }
 
   @override
@@ -183,7 +273,7 @@ class _LoginFormState extends State<LoginForm> {
     return Column(
       children: [
         Flexible(
-          flex: 2,
+          flex: widget.authMode == AuthMode.login ? 3 : 4,
           child: Card(
             elevation: 20,
             child: Focus(
@@ -205,34 +295,10 @@ class _LoginFormState extends State<LoginForm> {
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
-                          TextFormField(
-                            decoration:
-                                const InputDecoration(labelText: 'Email'),
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            onSaved: (newValue) =>
-                                _formFields['email'] = newValue as String,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'enter an email';
-                              }
-                              return null;
-                            },
-                          ),
-                          TextFormField(
-                            decoration:
-                                const InputDecoration(labelText: 'Password'),
-                            textInputAction: TextInputAction.done,
-                            obscureText: true,
-                            onSaved: (newValue) =>
-                                _formFields['password'] = newValue as String,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'enter your password';
-                              }
-                              return null;
-                            },
-                          ),
+                          _buildEmailField(),
+                          _buildPasswordField(),
+                          if (widget.authMode == AuthMode.signup)
+                            _buildConfirmPasswordField(),
                         ],
                       ),
                     )),
@@ -254,162 +320,8 @@ class _LoginFormState extends State<LoginForm> {
               : ElevatedButton(
                   key: _buttonKey,
                   onPressed: _saveForm,
-                  child: const Text('Login'),
-                ),
-        )
-      ],
-    );
-  }
-}
-
-class SignupForm extends StatefulWidget {
-  const SignupForm({super.key});
-
-  @override
-  State<SignupForm> createState() => _SignupFormState();
-}
-
-class _SignupFormState extends State<SignupForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey();
-  late TextEditingController _passwordController;
-  bool _loading = false;
-  final GlobalKey _buttonKey = GlobalKey();
-  bool _error = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _passwordController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _passwordController.dispose();
-  }
-
-  final _formFields = {
-    'email': '',
-    'password': '',
-  };
-
-  Future<void> _saveForm() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    _formKey.currentState!.save();
-    setState(() {
-      _loading = true;
-    });
-    final navigator = Navigator.of(context);
-    try {
-      await Provider.of<Auth>(context, listen: false).signup(
-        _formFields['email'] as String,
-        _formFields['password'] as String,
-      );
-      navigator.pushReplacementNamed(ProductOverviewScreen.routeName);
-    } catch (error) {
-      print(error);
-      setState(() => _error = true);
-    }
-    setState(() {
-      _loading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final deviceSize = MediaQuery.of(context).size;
-    return Column(
-      children: [
-        Flexible(
-          flex: 4,
-          child: Card(
-            elevation: 20,
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: deviceSize.width * 0.75,
-              ),
-              padding: const EdgeInsets.all(10.0),
-              child: Focus(
-                onFocusChange: (value) async {
-                  if (value) {
-                    await Future.delayed(const Duration(milliseconds: 500));
-                    RenderObject? object =
-                        _buttonKey.currentContext?.findRenderObject();
-                    object?.showOnScreen();
-                  }
-                },
-                child: Form(
-                    key: _formKey,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            decoration:
-                                const InputDecoration(labelText: 'Email'),
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            onSaved: (newValue) =>
-                                _formFields['email'] = newValue as String,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'enter an email';
-                              }
-                              return null;
-                            },
-                          ),
-                          TextFormField(
-                            decoration:
-                                const InputDecoration(labelText: 'Password'),
-                            textInputAction: TextInputAction.next,
-                            obscureText: true,
-                            controller: _passwordController,
-                            onSaved: (newValue) =>
-                                _formFields['password'] = newValue as String,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'enter your password';
-                              }
-                              return null;
-                            },
-                          ),
-                          TextFormField(
-                            decoration: const InputDecoration(
-                                labelText: 'Confirm password'),
-                            textInputAction: TextInputAction.done,
-                            obscureText: true,
-                            validator: (value) {
-                              if (value == null ||
-                                  value.isEmpty ||
-                                  value != _passwordController.text) {
-                                return 'passwords don\'t match';
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
-                    )),
-              ),
-            ),
-          ),
-        ),
-        Flexible(
-          child: _loading
-              ? const Center(
-                  child: SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                    ),
-                  ),
-                )
-              : ElevatedButton(
-                  key: _buttonKey,
-                  onPressed: _saveForm,
-                  child: const Text('Signup'),
+                  child: Text(
+                      widget.authMode == AuthMode.login ? 'Login' : 'Sign Up'),
                 ),
         )
       ],

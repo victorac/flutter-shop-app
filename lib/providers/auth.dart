@@ -3,20 +3,30 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shop_app/models/http_exception.dart';
 
 final String apiKey = dotenv.env['API_KEY'] as String;
 
 class Auth extends ChangeNotifier {
   String? _token;
-  String? _expirationDate;
+  DateTime? _expirationDate;
   String? _userId;
 
   String? get token {
-    return _token;
+    if (_token != null &&
+        _expirationDate != null &&
+        _expirationDate!.isAfter(DateTime.now())) {
+      return _token;
+    }
+    return null;
   }
 
   String? get userId {
     return _userId;
+  }
+
+  bool get isLoggedIn {
+    return token != null;
   }
 
   Future<void> authenticate(
@@ -34,11 +44,12 @@ class Auth extends ChangeNotifier {
         ),
       );
       final responseData = jsonDecode(response.body);
+      if (responseData['error'] != null) {
+        throw HttpException(responseData['error']['message']);
+      }
       _token = responseData['idToken'];
       final secondsToExpire = double.parse(responseData['expiresIn']).round();
-      _expirationDate = DateTime.now()
-          .add(Duration(seconds: secondsToExpire))
-          .toIso8601String();
+      _expirationDate = DateTime.now().add(Duration(seconds: secondsToExpire));
       _userId = responseData['localId'];
       notifyListeners();
     } catch (error) {
@@ -55,10 +66,5 @@ class Auth extends ChangeNotifier {
   Future<void> signin(String email, String password) async {
     return authenticate(email, password,
         'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$apiKey');
-  }
-
-  bool isLoggedIn() {
-    if (_expirationDate == null) return false;
-    return DateTime.now().isBefore(DateTime.parse(_expirationDate as String));
   }
 }
