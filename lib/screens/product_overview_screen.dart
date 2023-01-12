@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shop_app/providers/auth.dart';
 
 import '../screens/cart_screen.dart';
 import '../providers/cart.dart';
@@ -9,6 +10,7 @@ import '../widgets/products_grid.dart';
 import '../widgets/app_drawer.dart';
 
 class ProductOverviewScreen extends StatefulWidget {
+  static const routeName = '/overview';
   const ProductOverviewScreen({super.key});
 
   @override
@@ -23,6 +25,8 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   bool _fetchingError = false;
   bool _isRetry = false;
   late bool _isInit;
+  String? _uid;
+  String? _token;
 
   @override
   void initState() {
@@ -34,10 +38,15 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   void didChangeDependencies() async {
     super.didChangeDependencies();
     if (_isInit) {
+      _uid = Provider.of<Auth>(context).userId;
+      _token = Provider.of<Auth>(context).token;
       _isLoading = true;
       try {
-        await Provider.of<Products>(context, listen: false).getItems();
+        await Provider.of<Products>(context, listen: false)
+            .getItems(_uid as String, _token as String);
       } catch (error) {
+        print('error from start?');
+        print(error);
         _fetchingError = true;
       } finally {
         setState(() {
@@ -53,13 +62,20 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
       _isRetry = true;
     });
     try {
-      await Provider.of<Products>(context, listen: false).getItems();
+      await Provider.of<Products>(context, listen: false)
+          .getItems(_uid as String, _token as String);
+      setState(() {
+        _fetchingError = false;
+      });
     } catch (error) {
+      print(error);
       setState(() {
         _fetchingError = true;
       });
     } finally {
-      _isRetry = false;
+      setState(() {
+        _isRetry = false;
+      });
     }
   }
 
@@ -117,10 +133,9 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
                       child: ElevatedButton(
                         onPressed: _refreshItems,
                         child: _isRetry
-                            ? const FractionallySizedBox(
-                                widthFactor: 0.05,
-                                heightFactor: 0.03,
-                                alignment: Alignment.center,
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Colors.black,

@@ -143,12 +143,10 @@ class Products with ChangeNotifier {
     }
   }
 
-  Future<void> getItems() async {
+  Future<void> getItems(String uid, String token) async {
     try {
-      final url = Uri.https(
-        dotenv.env['DATABASE_AUTHORITY'] as String,
-        dotenv.env['DATABASE_PRODUCT_PATH'] as String,
-      );
+      final url = Uri.parse(
+          'https://${dotenv.env['DATABASE_AUTHORITY']}/users/$uid/products.json?auth=$token');
       final response = await http.get(url);
       if (response.statusCode >= 400) {
         final responseBody = convert.jsonDecode(response.body);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import './providers/auth.dart';
 import './providers/orders.dart';
 import './providers/cart.dart';
 import './providers/products.dart';
@@ -32,6 +33,9 @@ class App extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
+          create: (context) => Auth(),
+        ),
+        ChangeNotifierProvider(
           create: (context) => Products(),
         ),
         ChangeNotifierProvider(
@@ -39,13 +43,14 @@ class App extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) => Orders(),
-        )
+        ),
       ],
       child: MaterialApp(
         title: "MyShop",
         theme: themeData,
         home: AuthScreen(),
         routes: {
+          ProductOverviewScreen.routeName: (context) => ProductOverviewScreen(),
           ProductDetailScreen.routeName: (context) => ProductDetailScreen(),
           CartScreen.routeName: (context) => CartScreen(),
           OrdersScreen.routeName: (context) => OrdersScreen(),

@@ -1,6 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shop_app/providers/auth.dart';
+import 'package:shop_app/screens/product_overview_screen.dart';
 
 enum AuthMode {
   select,
@@ -144,7 +147,7 @@ class _LoginFormState extends State<LoginForm> {
   final GlobalKey<FormState> _formKey = GlobalKey();
   final GlobalKey _buttonKey = GlobalKey();
   bool _loading = false;
-
+  bool _error = false;
   final _formFields = {
     'email': '',
     'password': '',
@@ -158,8 +161,17 @@ class _LoginFormState extends State<LoginForm> {
     setState(() {
       _loading = true;
     });
-    // authenticate
-    try {} catch (error) {}
+    final navigator = Navigator.of(context);
+    try {
+      await Provider.of<Auth>(context, listen: false).signin(
+        _formFields['email'] as String,
+        _formFields['password'] as String,
+      );
+      navigator.pushReplacementNamed(ProductOverviewScreen.routeName);
+    } catch (error) {
+      print(error);
+      setState(() => _error = true);
+    }
     setState(() {
       _loading = false;
     });
@@ -210,7 +222,7 @@ class _LoginFormState extends State<LoginForm> {
                           TextFormField(
                             decoration:
                                 const InputDecoration(labelText: 'Password'),
-                            textInputAction: TextInputAction.next,
+                            textInputAction: TextInputAction.done,
                             obscureText: true,
                             onSaved: (newValue) =>
                                 _formFields['password'] = newValue as String,
@@ -230,7 +242,15 @@ class _LoginFormState extends State<LoginForm> {
         ),
         Flexible(
           child: _loading
-              ? const CircularProgressIndicator()
+              ? const Center(
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                    ),
+                  ),
+                )
               : ElevatedButton(
                   key: _buttonKey,
                   onPressed: _saveForm,
@@ -254,6 +274,7 @@ class _SignupFormState extends State<SignupForm> {
   late TextEditingController _passwordController;
   bool _loading = false;
   final GlobalKey _buttonKey = GlobalKey();
+  bool _error = false;
 
   @override
   void initState() {
@@ -280,8 +301,17 @@ class _SignupFormState extends State<SignupForm> {
     setState(() {
       _loading = true;
     });
-    // authenticate
-    try {} catch (error) {}
+    final navigator = Navigator.of(context);
+    try {
+      await Provider.of<Auth>(context, listen: false).signup(
+        _formFields['email'] as String,
+        _formFields['password'] as String,
+      );
+      navigator.pushReplacementNamed(ProductOverviewScreen.routeName);
+    } catch (error) {
+      print(error);
+      setState(() => _error = true);
+    }
     setState(() {
       _loading = false;
     });
@@ -367,7 +397,15 @@ class _SignupFormState extends State<SignupForm> {
         ),
         Flexible(
           child: _loading
-              ? const CircularProgressIndicator()
+              ? const Center(
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                    ),
+                  ),
+                )
               : ElevatedButton(
                   key: _buttonKey,
                   onPressed: _saveForm,
