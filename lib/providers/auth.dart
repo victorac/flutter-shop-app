@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ class Auth extends ChangeNotifier {
   String? _token;
   DateTime? _expirationDate;
   String? _userId;
+  Timer? _timer;
 
   String? get token {
     if (_token != null &&
@@ -52,6 +54,7 @@ class Auth extends ChangeNotifier {
       _expirationDate = DateTime.now().add(Duration(seconds: secondsToExpire));
       _userId = responseData['localId'];
       notifyListeners();
+      _autoLogout();
     } catch (error) {
       print(error);
       rethrow;
@@ -66,5 +69,20 @@ class Auth extends ChangeNotifier {
   Future<void> signin(String email, String password) async {
     return authenticate(email, password,
         'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$apiKey');
+  }
+
+  void logout() {
+    _token = null;
+    _userId = null;
+    _expirationDate = null;
+    notifyListeners();
+  }
+
+  void _autoLogout() {
+    _timer?.cancel();
+    if (_expirationDate != null) {
+      final duration = _expirationDate!.difference(DateTime.now());
+      _timer = Timer(duration, logout);
+    }
   }
 }

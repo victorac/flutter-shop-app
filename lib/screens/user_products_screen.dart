@@ -13,7 +13,7 @@ class UserProductsScreen extends StatelessWidget {
 
   Future<void> _refreshItems(BuildContext context) async {
     try {
-      await Provider.of<Products>(context, listen: false).getItems();
+      await Provider.of<Products>(context, listen: false).getUserItems();
     } catch (error) {
       print(error);
     }
@@ -21,8 +21,6 @@ class UserProductsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final productsData = Provider.of<Products>(context);
-    final removeItem = Provider.of<Products>(context).removeItem;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your products'),
@@ -35,18 +33,30 @@ class UserProductsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _refreshItems(context),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ListView.builder(
-            itemCount: productsData.userItems.length,
-            itemBuilder: (context, index) => UserProductItem(
-              product: productsData.userItems[index],
-              removeItem: removeItem,
-            ),
-          ),
-        ),
+      body: FutureBuilder(
+        future: _refreshItems(context),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return RefreshIndicator(
+              onRefresh: () => _refreshItems(context),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Consumer<Products>(
+                  builder: (context, productsData, _) => ListView.builder(
+                    itemCount: productsData.items.length,
+                    itemBuilder: (context, index) => UserProductItem(
+                      product: productsData.items[index],
+                      removeItem: productsData.removeItem,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
       ),
       drawer: AppDrawer(),
     );

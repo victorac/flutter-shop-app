@@ -16,10 +16,6 @@ class Products with ChangeNotifier {
   List<Product> _items;
   Map<String, dynamic>? _favorites;
 
-  List<Product> get userItems {
-    return _items.where((product) => product.uid == uid).toList();
-  }
-
   List<Product> get items {
     return [..._items];
   }
@@ -133,9 +129,47 @@ class Products with ChangeNotifier {
     }
   }
 
+  Future<void> getUserItems() async {
+    try {
+      final url = Uri.parse(
+          'https://${dotenv.env['DATABASE_AUTHORITY']}/products/$uid.json?auth=$token');
+      final response = await http.get(url);
+      final Map<String, dynamic>? responseBody =
+          convert.jsonDecode(response.body);
+      if (response.statusCode >= 400) {
+        throw HttpException('Couldn\'t fetch data $responseBody');
+      }
+      final Map<String, dynamic>? products = responseBody;
+      if (products == null) {
+        _items = [];
+        notifyListeners();
+        return;
+      }
+      // favorite data
+      await getFavorites();
+      final List<Product> items = [];
+      products.forEach(
+        (productId, product) => items.add(
+          Product(
+            id: productId,
+            title: product['title'],
+            description: product['description'],
+            price: product['price'],
+            imageUrl: product['imageUrl'],
+            isFavorite: _favorites?[productId] ?? false,
+          ),
+        ),
+      );
+      _items = items;
+      notifyListeners();
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+  }
+
   Future<void> getItems() async {
     try {
-      // product data
       final url = Uri.parse(
           'https://${dotenv.env['DATABASE_AUTHORITY']}/products.json?auth=$token');
       final response = await http.get(url);
@@ -146,6 +180,8 @@ class Products with ChangeNotifier {
       }
       final Map<String, dynamic>? usersProductData = responseBody;
       if (usersProductData == null) {
+        _items = [];
+        notifyListeners();
         return;
       }
       // favorite data
@@ -160,7 +196,6 @@ class Products with ChangeNotifier {
               description: product['description'],
               price: product['price'],
               imageUrl: product['imageUrl'],
-              uid: ithUid,
               isFavorite: _favorites?[productId] ?? false,
             ),
           ),
@@ -177,10 +212,6 @@ class Products with ChangeNotifier {
   Future<void> removeItem(String id) async {
     final index = _items.indexWhere((element) => element.id == id);
     Product? productRef = _items[index];
-    if (productRef.uid != uid) {
-      print("this product belongs to a different user!");
-      return;
-    }
     _items.removeAt(index);
     notifyListeners();
     final url = Uri.parse(
