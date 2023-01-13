@@ -16,6 +16,10 @@ class Products with ChangeNotifier {
   List<Product> _items;
   Map<String, dynamic>? _favorites;
 
+  List<Product> get userItems {
+    return _items.where((product) => product.uid == uid).toList();
+  }
+
   List<Product> get items {
     return [..._items];
   }
@@ -156,7 +160,7 @@ class Products with ChangeNotifier {
               description: product['description'],
               price: product['price'],
               imageUrl: product['imageUrl'],
-              uid: product['uid'],
+              uid: ithUid,
               isFavorite: _favorites?[productId] ?? false,
             ),
           ),
