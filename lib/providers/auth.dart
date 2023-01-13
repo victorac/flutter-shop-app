@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shop_app/models/http_exception.dart';
 
 final String apiKey = dotenv.env['API_KEY'] as String;
@@ -53,8 +54,15 @@ class Auth extends ChangeNotifier {
       final secondsToExpire = double.parse(responseData['expiresIn']).round();
       _expirationDate = DateTime.now().add(Duration(seconds: secondsToExpire));
       _userId = responseData['localId'];
-      notifyListeners();
       _autoLogout();
+      final prefs = await SharedPreferences.getInstance();
+      final userData = jsonEncode({
+        'token': _token,
+        'userId': _userId,
+        'expirationDate': _expirationDate?.toIso8601String(),
+      });
+      await prefs.setString('userData', userData);
+      notifyListeners();
     } catch (error) {
       print(error);
       rethrow;
@@ -71,11 +79,37 @@ class Auth extends ChangeNotifier {
         'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$apiKey');
   }
 
-  void logout() {
+  Future<void> tryAutoLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    final dataString = prefs.getString('userData');
+    if (dataString == null) {
+      return;
+    }
+    final Map<String, dynamic> userData = jsonDecode(dataString);
+    final storedExpirationDate = DateTime.parse(userData['expirationDate']);
+    final storedToken = userData['token'];
+    final storedUserId = userData['userId'];
+    if (storedExpirationDate.isBefore(DateTime.now())) {
+      return;
+    }
+    _token = storedToken;
+    _userId = storedUserId;
+    _expirationDate = storedExpirationDate;
+    _autoLogout();
+    notifyListeners();
+  }
+
+  Future<void> logout() async {
     _token = null;
     _userId = null;
     _expirationDate = null;
+    if (_timer != null) {
+      _timer?.cancel();
+      _timer = null;
+    }
     notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    prefs.clear();
   }
 
   void _autoLogout() {

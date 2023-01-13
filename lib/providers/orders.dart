@@ -59,12 +59,14 @@ class Orders with ChangeNotifier {
   }
 
   Future<void> listOrders() async {
+    print("$uid");
     final url = Uri.parse(
         'https://${dotenv.env['DATABASE_AUTHORITY']}/users/$uid/orders.json?auth=$token');
     try {
       final response = await http.get(url);
       final Map<String, dynamic>? orders = convert.jsonDecode(response.body);
       if (orders == null) {
+        _orders = [];
         return;
       }
       List<OrderItem> loadedItems = [];

@@ -6,7 +6,7 @@ import '../widgets/app_drawer.dart';
 
 class OrdersScreen extends StatefulWidget {
   static const routeName = '/orders';
-  const OrdersScreen({super.key});
+  OrdersScreen({super.key});
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -22,6 +22,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   void initState() {
+    print("hey");
     super.initState();
     _ordersFuture = _obtainOrdersFuture();
   }
@@ -29,7 +30,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final appBar = AppBar(
-      title: const Text('Your order'),
+      title: const Text('Your orders'),
     );
     return Scaffold(
       appBar: appBar,

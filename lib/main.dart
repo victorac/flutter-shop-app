@@ -13,6 +13,7 @@ import './screens/product_overview_screen.dart';
 import './screens/user_products_screen.dart';
 import './screens/edit_product_screen.dart';
 import './screens/auth_screen.dart';
+import './screens/splash_screen.dart';
 
 Future main() async {
   await dotenv.load(fileName: ".env");
@@ -23,7 +24,16 @@ class App extends StatelessWidget {
   const App({super.key});
 
   Widget authenticated(Auth auth, Widget widget) {
-    return auth.isLoggedIn ? widget : AuthScreen();
+    if (auth.isLoggedIn) {
+      return widget;
+    }
+    return FutureBuilder(
+      future: auth.tryAutoLogin(),
+      builder: ((context, snapshot) =>
+          snapshot.connectionState == ConnectionState.waiting
+              ? const SplashScreen()
+              : const AuthScreen()),
+    );
   }
 
   @override
