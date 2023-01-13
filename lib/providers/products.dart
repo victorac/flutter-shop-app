@@ -8,11 +8,13 @@ import '../models/http_exception.dart';
 import './product.dart';
 
 class Products with ChangeNotifier {
-  Products([this.uid, this.token, items]) : _items = items ?? {};
+  Products([this.uid, this.token, previousItems])
+      : _items = previousItems ?? [];
 
   String? uid;
   String? token;
   List<Product> _items;
+  Map<String, dynamic>? _favorites;
 
   List<Product> get items {
     return [..._items];
@@ -81,7 +83,7 @@ class Products with ChangeNotifier {
     required String imageUrl,
   }) async {
     final url = Uri.parse(
-        'https://${dotenv.env['DATABASE_AUTHORITY']}/users/$uid/products.json?auth=$token');
+        'https://${dotenv.env['DATABASE_AUTHORITY']}/products/$uid.json?auth=$token');
     try {
       final response = await http.post(
         url,
@@ -110,30 +112,56 @@ class Products with ChangeNotifier {
     }
   }
 
+  Future<void> getFavorites() async {
+    final url = Uri.parse(
+        'https://${dotenv.env['DATABASE_AUTHORITY']}/favorites/$uid.json?auth=$token');
+    try {
+      final response = await http.get(url);
+      final Map<String, dynamic>? responseBody =
+          convert.jsonDecode(response.body);
+      if (response.statusCode >= 400) {
+        throw HttpException('Couldn\'t fetch favorite data $responseBody');
+      }
+      _favorites = responseBody;
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+  }
+
   Future<void> getItems() async {
     try {
+      // product data
       final url = Uri.parse(
-          'https://${dotenv.env['DATABASE_AUTHORITY']}/users/$uid/products.json?auth=$token');
+          'https://${dotenv.env['DATABASE_AUTHORITY']}/products.json?auth=$token');
       final response = await http.get(url);
+      final Map<String, dynamic>? responseBody =
+          convert.jsonDecode(response.body);
       if (response.statusCode >= 400) {
-        final responseBody = convert.jsonDecode(response.body);
         throw HttpException('Couldn\'t fetch data $responseBody');
       }
-      final Map<String, dynamic>? products = convert.jsonDecode(response.body);
-      final List<Product> items = [];
-      if (products == null) {
+      final Map<String, dynamic>? usersProductData = responseBody;
+      if (usersProductData == null) {
         return;
       }
-      products.forEach((id, product) {
-        items.add(Product(
-          id: id,
-          title: product['title'],
-          description: product['description'],
-          price: product['price'],
-          imageUrl: product['imageUrl'],
-          isFavorite: product['isFavorite'],
-        ));
-      });
+      // favorite data
+      await getFavorites();
+      final List<Product> items = [];
+      usersProductData.forEach(
+        (ithUid, productMap) => (productMap as Map<String, dynamic>).forEach(
+          (productId, product) => items.add(
+            Product(
+              id: productId,
+              title: product['title'],
+              description: product['description'],
+              price: product['price'],
+              imageUrl: product['imageUrl'],
+              uid: product['uid'],
+              isFavorite: _favorites?[productId] ?? false,
+            ),
+          ),
+        ),
+      );
       _items = items;
       notifyListeners();
     } catch (error) {
@@ -143,12 +171,16 @@ class Products with ChangeNotifier {
   }
 
   Future<void> removeItem(String id) async {
-    final url = Uri.parse(
-        'https://${dotenv.env['DATABASE_AUTHORITY']}/users/$uid/products/$id.json?auth=$token');
     final index = _items.indexWhere((element) => element.id == id);
     Product? productRef = _items[index];
+    if (productRef.uid != uid) {
+      print("this product belongs to a different user!");
+      return;
+    }
     _items.removeAt(index);
     notifyListeners();
+    final url = Uri.parse(
+        'https://${dotenv.env['DATABASE_AUTHORITY']}/products/$uid/$id.json?auth=$token');
     final response = await http.delete(url);
     if (response.statusCode >= 400) {
       _items.insert(index, productRef);

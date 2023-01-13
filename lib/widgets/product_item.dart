@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../providers/auth.dart';
 import '../providers/cart.dart';
 import '../providers/product.dart';
 import '../screens/product_detail_screen.dart';
 
 class ProductItem extends StatelessWidget {
-  ProductItem({super.key});
+  const ProductItem({super.key});
 
   Future<void> _addItemToCart(Cart cartData, Product product) async {
     if (cartData.items.containsKey(product.id)) {
@@ -29,6 +30,8 @@ class ProductItem extends StatelessWidget {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final product = Provider.of<Product>(context, listen: false);
     final cartData = Provider.of<Cart>(context, listen: false);
+    final token = Provider.of<Auth>(context, listen: false).token;
+    final uid = Provider.of<Auth>(context, listen: false).userId;
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: GridTile(
@@ -38,7 +41,7 @@ class ProductItem extends StatelessWidget {
             builder: (_, product, __) => IconButton(
               onPressed: () async {
                 try {
-                  await product.toggleIsFavorite();
+                  await product.toggleIsFavorite(uid, token);
                 } catch (error) {
                   scaffoldMessenger.clearSnackBars();
                   scaffoldMessenger.showSnackBar(
