@@ -37,26 +37,29 @@ class _OrderItemState extends State<OrderItem> {
               },
             ),
           ),
-          if (_expanded)
-            SizedBox(
-              height: min(widget.order.products.length * 20 + 50, 180),
-              child: ListView.builder(
-                itemCount: widget.order.products.length,
-                itemBuilder: (context, index) => Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                  child: Row(
-                    children: [
-                      Text(widget.order.products[index].title),
-                      const Spacer(),
-                      Text(
-                        '${widget.order.products[index].quantity}x \$${widget.order.products[index].price}',
-                      )
-                    ],
-                  ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeIn,
+            height: _expanded
+                ? 0
+                : min(widget.order.products.length * 20 + 50, 180),
+            child: ListView.builder(
+              itemCount: widget.order.products.length,
+              itemBuilder: (context, index) => Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                child: Row(
+                  children: [
+                    Text(widget.order.products[index].title),
+                    const Spacer(),
+                    Text(
+                      '${widget.order.products[index].quantity}x \$${widget.order.products[index].price}',
+                    )
+                  ],
                 ),
               ),
-            )
+            ),
+          )
         ],
       ),
     );

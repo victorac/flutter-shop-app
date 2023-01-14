@@ -80,7 +80,7 @@ class AuthScreen extends StatelessWidget {
                   ),
                   Flexible(
                     fit: FlexFit.tight,
-                    flex: deviceSize.width > 600 ? 2 : 1,
+                    flex: deviceSize.width > 600 ? 3 : 2,
                     child: AuthArea(),
                   ),
                 ],
@@ -120,7 +120,7 @@ class _AuthAreaState extends State<AuthArea> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Flexible(flex: 3, child: AuthForm(_authMode)),
+        Flexible(flex: 4, child: AuthForm(_authMode)),
         Flexible(flex: 1, child: _buildSwitchAuthModeTextButton()),
       ],
     );
@@ -136,7 +136,8 @@ class AuthForm extends StatefulWidget {
   State<AuthForm> createState() => _AuthFormState();
 }
 
-class _AuthFormState extends State<AuthForm> {
+class _AuthFormState extends State<AuthForm>
+    with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey();
   final GlobalKey _buttonKey = GlobalKey();
   bool _loading = false;
@@ -145,17 +146,53 @@ class _AuthFormState extends State<AuthForm> {
     'password': '',
   };
   late TextEditingController _passwordController;
+  late AnimationController _animationController;
+  late Animation<double> _opacityAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     _passwordController = TextEditingController();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(
+        milliseconds: 300,
+      ),
+    );
+    _opacityAnimation = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeIn,
+      ),
+    );
+    _slideAnimation = Tween<Offset>(
+            begin: const Offset(0.0, -0.9), end: const Offset(0.0, 0.0))
+        .animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.decelerate,
+      ),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant AuthForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.authMode != widget.authMode) {
+      if (widget.authMode == AuthMode.signup) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    }
   }
 
   @override
   void dispose() {
-    _passwordController.dispose();
     super.dispose();
+    _passwordController.dispose();
+    _animationController.dispose();
   }
 
   void _showErrorDialog(errorMessage) {
@@ -253,10 +290,12 @@ class _AuthFormState extends State<AuthForm> {
 
   Widget _buildConfirmPasswordField() {
     return TextFormField(
+      enabled: widget.authMode == AuthMode.signup,
       decoration: const InputDecoration(labelText: 'Confirm password'),
       textInputAction: TextInputAction.done,
       obscureText: true,
       validator: (value) {
+        if (widget.authMode == AuthMode.login) return null;
         if (value == null ||
             value.isEmpty ||
             value != _passwordController.text) {
@@ -273,7 +312,7 @@ class _AuthFormState extends State<AuthForm> {
     return Column(
       children: [
         Flexible(
-          flex: widget.authMode == AuthMode.login ? 3 : 4,
+          flex: widget.authMode == AuthMode.login ? 4 : 5,
           child: Card(
             elevation: 20,
             child: Focus(
@@ -285,23 +324,40 @@ class _AuthFormState extends State<AuthForm> {
                   object?.showOnScreen();
                 }
               },
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: 140 + (widget.authMode == AuthMode.login ? 0 : 70),
                 constraints: BoxConstraints(
                   maxWidth: deviceSize.width * 0.75,
                 ),
                 padding: const EdgeInsets.all(10.0),
                 child: Form(
-                    key: _formKey,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          _buildEmailField(),
-                          _buildPasswordField(),
-                          if (widget.authMode == AuthMode.signup)
-                            _buildConfirmPasswordField(),
-                        ],
-                      ),
-                    )),
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildEmailField(),
+                        _buildPasswordField(),
+                        AnimatedContainer(
+                          curve: Curves.easeIn,
+                          duration: const Duration(milliseconds: 500),
+                          constraints: BoxConstraints(
+                            maxHeight:
+                                widget.authMode == AuthMode.login ? 0 : 70,
+                          ),
+                          child: FadeTransition(
+                            opacity: _opacityAnimation,
+                            child: SlideTransition(
+                              position: _slideAnimation,
+                              child: _buildConfirmPasswordField(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

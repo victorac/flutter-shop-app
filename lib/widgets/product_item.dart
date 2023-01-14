@@ -110,9 +110,13 @@ class ProductItem extends StatelessWidget {
             ProductDetailScreen.routeName,
             arguments: product.id,
           ),
-          child: Image.network(
-            product.imageUrl,
-            fit: BoxFit.cover,
+          child: Hero(
+            tag: product.id,
+            child: FadeInImage.assetNetwork(
+              placeholder: 'assets/images/placeholder.png',
+              image: product.imageUrl,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
       ),
